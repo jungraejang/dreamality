@@ -31,6 +31,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Model not found' }, { status: 404 })
     }
 
+    console.log('📋 Current model status:', model.status)
+    console.log('🔗 Current GLB URL:', model.glb_url)
+
     // If already completed or failed, return cached status
     if (model.status === 'SUCCEEDED' || model.status === 'FAILED') {
       return NextResponse.json({
@@ -83,15 +86,20 @@ export async function POST(request: Request) {
       // Download and store GLB file in Supabase Storage
       try {
         if (meshyData.model_urls?.glb) {
-          console.log('Downloading GLB from Meshy:', meshyData.model_urls.glb)
+          console.log('🔽 Downloading GLB from Meshy:', meshyData.model_urls.glb)
           
           const glbResponse = await fetch(meshyData.model_urls.glb)
+          console.log('📥 GLB download response status:', glbResponse.status)
+          
           if (glbResponse.ok) {
             const glbBlob = await glbResponse.blob()
             const glbBuffer = Buffer.from(await glbBlob.arrayBuffer())
+            console.log('📦 GLB file size:', glbBuffer.length, 'bytes')
 
             // Upload to Supabase Storage
             const fileName = `${user.id}/${model.meshy_task_id}.glb`
+            console.log('⬆️  Uploading to Supabase:', fileName)
+            
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('generated-images')
               .upload(fileName, glbBuffer, {
@@ -107,14 +115,18 @@ export async function POST(request: Request) {
 
               // Update with Supabase URL instead of Meshy URL
               updateData.glb_url = publicUrl
-              console.log('GLB saved to Supabase:', publicUrl)
+              console.log('✅ GLB saved to Supabase:', publicUrl)
+              console.log('🎉 Now using YOUR storage URL instead of Meshy!')
             } else {
-              console.error('Failed to upload GLB to Supabase:', uploadError)
+              console.error('❌ Failed to upload GLB to Supabase:', uploadError)
+              console.log('⚠️  Falling back to Meshy URL')
             }
+          } else {
+            console.error('❌ Failed to download GLB from Meshy, status:', glbResponse.status)
           }
         }
       } catch (error) {
-        console.error('Error downloading/uploading GLB:', error)
+        console.error('❌ Error downloading/uploading GLB:', error)
         // Continue with Meshy URL if storage fails
       }
     } else if (status === 'FAILED') {
@@ -122,13 +134,18 @@ export async function POST(request: Request) {
       updateData.completed_at = new Date().toISOString()
     }
 
+    console.log('💾 Updating database with:', updateData)
+    
     const { error: updateError } = await supabase
       .from('models_3d')
       .update(updateData)
       .eq('id', modelId)
 
     if (updateError) {
-      console.error('Database update error:', updateError)
+      console.error('❌ Database update error:', updateError)
+    } else {
+      console.log('✅ Database updated successfully')
+      console.log('🔗 New GLB URL in database:', updateData.glb_url)
     }
 
     return NextResponse.json({

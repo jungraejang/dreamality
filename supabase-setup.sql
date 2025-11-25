@@ -72,32 +72,40 @@ VALUES ('generated-images', 'generated-images', true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Create storage policies
-CREATE POLICY "Users can upload their own images"
+CREATE POLICY "Users can upload their own files"
   ON storage.objects
   FOR INSERT
   WITH CHECK (
     bucket_id = 'generated-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "Users can view their own images"
+CREATE POLICY "Users can view their own files"
   ON storage.objects
   FOR SELECT
   USING (
     bucket_id = 'generated-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    (storage.foldername(name))[1] = auth.uid()::text
   );
 
-CREATE POLICY "Public can view all images"
+CREATE POLICY "Public can view all files"
   ON storage.objects
   FOR SELECT
   USING (bucket_id = 'generated-images');
 
-CREATE POLICY "Users can delete their own images"
+CREATE POLICY "Users can update their own files"
+  ON storage.objects
+  FOR UPDATE
+  USING (
+    bucket_id = 'generated-images' AND
+    (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+CREATE POLICY "Users can delete their own files"
   ON storage.objects
   FOR DELETE
   USING (
     bucket_id = 'generated-images' AND
-    auth.uid()::text = (storage.foldername(name))[1]
+    (storage.foldername(name))[1] = auth.uid()::text
   );
 

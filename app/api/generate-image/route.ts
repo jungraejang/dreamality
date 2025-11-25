@@ -71,12 +71,16 @@ export async function POST(request: Request) {
     } = supabase.storage.from('generated-images').getPublicUrl(fileName)
 
     // Save metadata to database
-    const { error: dbError } = await supabase.from('images').insert({
-      user_id: user.id,
-      prompt: prompt,
-      image_url: publicUrl,
-      storage_path: fileName,
-    })
+    const { data: imageData, error: dbError } = await supabase
+      .from('images')
+      .insert({
+        user_id: user.id,
+        prompt: prompt,
+        image_url: publicUrl,
+        storage_path: fileName,
+      })
+      .select()
+      .single()
 
     if (dbError) {
       console.error('Database error:', dbError)
@@ -84,6 +88,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       imageUrl: publicUrl,
+      imageId: imageData?.id,
       prompt,
     })
   } catch (error: any) {

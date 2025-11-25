@@ -1,11 +1,12 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles } from 'lucide-react'
+import { Loader2, Sparkles, Box } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -13,7 +14,10 @@ export function ImageGenerator() {
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
+  const [imageId, setImageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [generating3D, setGenerating3D] = useState(false)
+  const router = useRouter()
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -24,6 +28,7 @@ export function ImageGenerator() {
     setLoading(true)
     setError(null)
     setGeneratedImage(null)
+    setImageId(null)
 
     try {
       const response = await fetch('/api/generate-image', {
@@ -41,10 +46,43 @@ export function ImageGenerator() {
       }
 
       setGeneratedImage(data.imageUrl)
+      setImageId(data.imageId) // Store the image ID for 3D generation
     } catch (err: any) {
       setError(err.message || 'An error occurred')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleGenerate3D = async () => {
+    if (!imageId || !generatedImage) return
+
+    setGenerating3D(true)
+
+    try {
+      const response = await fetch('/api/generate-3d', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageId,
+          imageUrl: generatedImage,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start 3D generation')
+      }
+
+      // Redirect to 3D models page
+      router.push('/models-3d')
+    } catch (err: any) {
+      setError(err.message || 'An error occurred')
+    } finally {
+      setGenerating3D(false)
     }
   }
 
@@ -114,9 +152,9 @@ export function ImageGenerator() {
           <Card>
             <CardHeader>
               <CardTitle>Generated Image</CardTitle>
-              <CardDescription>Your AI-generated masterpiece</CardDescription>
+              <CardDescription>Your AI-generated masterpiece - Ready for 3D conversion!</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
                 <Image
                   src={generatedImage}
@@ -126,7 +164,29 @@ export function ImageGenerator() {
                   unoptimized
                 />
               </div>
-              <div className="mt-4 flex gap-2">
+              
+              {/* Primary Action: Generate 3D */}
+              <Button
+                onClick={handleGenerate3D}
+                disabled={generating3D || !imageId}
+                className="w-full"
+                size="lg"
+              >
+                {generating3D ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Starting 3D Generation...
+                  </>
+                ) : (
+                  <>
+                    <Box className="mr-2 h-5 w-5" />
+                    Generate 3D Model (2-3 min)
+                  </>
+                )}
+              </Button>
+
+              {/* Secondary Actions */}
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   className="flex-1"
@@ -147,6 +207,10 @@ export function ImageGenerator() {
                   Download
                 </Button>
               </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                💡 Click "Generate 3D Model" to convert this image into a 3D model using Meshy AI
+              </p>
             </CardContent>
           </Card>
         )}
