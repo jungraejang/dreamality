@@ -81,6 +81,8 @@ export async function POST(request: Request) {
       updateData.glb_url = meshyData.model_urls?.glb
       updateData.fbx_url = meshyData.model_urls?.fbx
       updateData.usdz_url = meshyData.model_urls?.usdz
+      updateData.obj_url = meshyData.model_urls?.obj
+      updateData.stl_url = meshyData.model_urls?.stl
       updateData.completed_at = new Date().toISOString()
 
       // Download and store GLB file in Supabase Storage

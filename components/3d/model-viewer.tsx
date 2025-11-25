@@ -13,11 +13,7 @@ function Model({ url }: ModelProps) {
   const { scene } = useGLTF(url, true) // true enables CORS
   const modelRef = useRef<any>(null)
 
-  useFrame(() => {
-    if (modelRef.current) {
-      modelRef.current.rotation.y += 0.005
-    }
-  })
+  // Auto-rotate disabled - user can manually rotate with mouse
 
   return (
     <Center>

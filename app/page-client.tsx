@@ -102,7 +102,7 @@ export function ImageGenerator() {
           <CardHeader>
             <CardTitle>Create Your Image</CardTitle>
             <CardDescription>
-              Describe the object you want to create. Images are optimized for 3D model generation with white backgrounds.
+              Describe the character or object. Images will be optimized for 3D model generation with full-body view, neutral pose, and clean white background.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -110,14 +110,14 @@ export function ImageGenerator() {
               <Label htmlFor="prompt">Image Prompt</Label>
               <Textarea
                 id="prompt"
-                placeholder="a vintage wooden chair, detailed textures..."
+                placeholder="a vintage wooden chair with carved details..."
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 rows={4}
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
-                💡 Tip: Describe a single object with details. White background will be added automatically.
+                💡 Tip: Describe the character or object. Full-body, neutral pose, white background, and optimal lighting will be added automatically.
               </p>
             </div>
 

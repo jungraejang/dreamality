@@ -23,8 +23,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid prompt' }, { status: 400 })
     }
 
-    // Add prefix for 3D model generation optimization
-    const optimizedPrompt = `image for 3d model generation, white background, ${prompt}`
+    // Add comprehensive prompt structure for optimal 3D model generation
+    const optimizedPrompt = `Full-body, head-to-toe render of ${prompt}, neutral standing pose, centered composition, plain white background, no shadows, no props unless specified. Clean silhouette for 3D model reference. High-detail, front view, evenly lit, realistic proportions, uncluttered, optimized for 3D model generation.`
 
     // Generate image using OpenAI DALL-E
     const response = await openai.images.generate({

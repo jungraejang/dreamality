@@ -17,6 +17,8 @@ interface Model3D {
   glb_url: string | null
   fbx_url: string | null
   usdz_url: string | null
+  obj_url: string | null
+  stl_url: string | null
   error_message: string | null
   created_at: string
   image?: {
@@ -181,29 +183,57 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
                   {showViewer ? 'Hide' : 'Preview'}
                 </Button>
               </div>
-              {(model.fbx_url || model.usdz_url) && (
-                <div className="flex gap-2">
-                  {model.fbx_url && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(model.fbx_url!, '_blank')}
-                      className="flex-1"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      FBX
-                    </Button>
-                  )}
-                  {model.usdz_url && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => window.open(model.usdz_url!, '_blank')}
-                      className="flex-1"
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      USDZ
-                    </Button>
+              {(model.fbx_url || model.usdz_url || model.obj_url || model.stl_url) && (
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    {model.fbx_url && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(model.fbx_url!, '_blank')}
+                        className="flex-1"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        FBX
+                      </Button>
+                    )}
+                    {model.usdz_url && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => window.open(model.usdz_url!, '_blank')}
+                        className="flex-1"
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        USDZ
+                      </Button>
+                    )}
+                  </div>
+                  {(model.obj_url || model.stl_url) && (
+                    <div className="flex gap-2">
+                      {model.obj_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(model.obj_url!, '_blank')}
+                          className="flex-1"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          OBJ
+                        </Button>
+                      )}
+                      {model.stl_url && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.open(model.stl_url!, '_blank')}
+                          className="flex-1"
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          STL
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}

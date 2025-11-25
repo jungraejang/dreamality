@@ -20,6 +20,8 @@ CREATE TABLE IF NOT EXISTS models_3d (
   glb_url TEXT,
   fbx_url TEXT,
   usdz_url TEXT,
+  obj_url TEXT,
+  stl_url TEXT,
   error_message TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   completed_at TIMESTAMP WITH TIME ZONE

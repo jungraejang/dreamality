@@ -156,13 +156,21 @@ Open [http://localhost:3000](http://localhost:3000)
 
 Here are some good prompts to test with (optimized for 3D model generation):
 
-1. "a vintage wooden chair with carved armrests and detailed textures"
-2. "a modern ceramic coffee mug with geometric patterns"
-3. "a fantasy potion bottle with glowing liquid inside"
-4. "a steampunk pocket watch with exposed gears and brass finish"
-5. "a decorative treasure chest with metal hinges and lock"
+**Characters:**
+1. "a medieval knight in full plate armor"
+2. "a cyberpunk hacker with neon accessories"
+3. "a fantasy wizard with flowing robes and staff"
 
-Note: "image for 3d model generation, white background," is automatically added to all prompts.
+**Objects:**
+1. "a vintage wooden chair with carved armrests"
+2. "a fantasy sword with ornate handle"
+3. "a steampunk pocket watch with exposed gears"
+
+**Creatures:**
+1. "a dragon with detailed scales"
+2. "a mechanical wolf with brass components"
+
+Note: Full-body render, neutral pose, white background, and optimal lighting are automatically added to all prompts.
 
 ## Environment Variables Reference
 

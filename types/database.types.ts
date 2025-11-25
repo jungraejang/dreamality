@@ -39,6 +39,8 @@ export interface Database {
           glb_url: string | null
           fbx_url: string | null
           usdz_url: string | null
+          obj_url: string | null
+          stl_url: string | null
           error_message: string | null
           created_at: string
           completed_at: string | null

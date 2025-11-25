@@ -95,14 +95,23 @@ npm run lint     # Run linter
 
 ## 💡 Example Prompts
 
-Try these to test your app (white background is added automatically):
+Try these to test your app (full-body, neutral pose, white background added automatically):
 
+**Characters:**
+- "a medieval knight in full armor"
+- "a futuristic robot with sleek metallic design"
+- "a fantasy elf warrior with bow and quiver"
+- "a steampunk inventor with goggles and coat"
+
+**Objects:**
 - "a vintage wooden chair with carved details"
 - "a modern ceramic vase with geometric patterns"
-- "a steampunk mechanical clock with brass gears"
 - "a fantasy sword with ornate handle and glowing runes"
 - "a retro arcade machine with colorful buttons"
-- "a decorative table lamp with stained glass shade"
+
+**Creatures:**
+- "a dragon with detailed scales and wings"
+- "a mechanical spider with brass legs"
 
 ## 🚀 Deploy to Production
 
