@@ -58,13 +58,14 @@ function ErrorFallback({ error, modelUrl }: { error: Error; modelUrl: string }) 
 }
 
 export function ModelViewer({ modelUrl }: ModelViewerProps) {
-  const [error, setError] = useState<Error | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
   if (error) {
+    const errorObj = new Error(error)
     return (
       <div className="w-full h-[400px] rounded-lg overflow-hidden bg-gradient-to-b from-gray-900 to-gray-800">
-        <ErrorFallback error={error} modelUrl={modelUrl} />
+        <ErrorFallback error={errorObj} modelUrl={modelUrl} />
       </div>
     )
   }
@@ -82,11 +83,6 @@ export function ModelViewer({ modelUrl }: ModelViewerProps) {
       <Canvas 
         camera={{ position: [0, 0, 5], fov: 50 }}
         onCreated={() => setLoading(false)}
-        onError={(error) => {
-          console.error('Canvas error:', error)
-          setError(error as Error)
-          setLoading(false)
-        }}
       >
         <Suspense fallback={<LoadingFallback />}>
           <ambientLight intensity={0.5} />
