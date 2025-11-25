@@ -5,6 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Image as ImageIcon } from 'lucide-react'
 import { ModelStatusCard } from '@/components/3d/model-status-card'
+import { Model3D } from '@/types/database.types'
+
+interface Model3DWithImage extends Omit<Model3D, 'image'> {
+  image?: {
+    prompt: string
+    image_url: string
+  }
+}
 
 export default async function Models3DPage() {
   const supabase = await createClient()
@@ -78,7 +86,7 @@ export default async function Models3DPage() {
 
         {models && models.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {models.map((model: any) => (
+            {models.map((model: Model3DWithImage) => (
               <ModelStatusCard key={model.id} model={model} />
             ))}
           </div>

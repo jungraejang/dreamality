@@ -47,8 +47,8 @@ export function ImageGenerator() {
 
       setGeneratedImage(data.imageUrl)
       setImageId(data.imageId) // Store the image ID for 3D generation
-    } catch (err: any) {
-      setError(err.message || 'An error occurred')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
     }
@@ -79,8 +79,8 @@ export function ImageGenerator() {
 
       // Redirect to 3D models page
       router.push('/models-3d')
-    } catch (err: any) {
-      setError(err.message || 'An error occurred')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setGenerating3D(false)
     }
@@ -209,7 +209,7 @@ export function ImageGenerator() {
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                💡 Click "Generate 3D Model" to convert this image into a 3D model using Meshy AI
+                💡 Click &quot;Generate 3D Model&quot; to convert this image into a 3D model using Meshy AI
               </p>
             </CardContent>
           </Card>
