@@ -7,7 +7,9 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Loader2, Sparkles, Box, ChevronDown, ChevronUp } from 'lucide-react'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Input } from '@/components/ui/input'
+import { Loader2, Sparkles, Box, ChevronDown, ChevronUp, Upload } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in'
@@ -25,6 +27,10 @@ export function ImageGenerator() {
   const [imageId, setImageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [generating3D, setGenerating3D] = useState(false)
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
+  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
   const router = useRouter()
 
   const handleGenerate = async () => {
@@ -100,6 +106,74 @@ export function ImageGenerator() {
     }
   }
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploadedFile(file)
+    setUploading(true)
+    setError(null)
+    setUploadedImageUrl(null)
+    setUploadedImageId(null)
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('prompt', `Uploaded: ${file.name}`)
+
+      const response = await fetch('/api/upload-image', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to upload image')
+      }
+
+      setUploadedImageUrl(data.imageUrl)
+      setUploadedImageId(data.imageId)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setUploadedFile(null)
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleGenerate3DFromUpload = async () => {
+    if (!uploadedImageId || !uploadedImageUrl) return
+
+    setGenerating3D(true)
+
+    try {
+      const response = await fetch('/api/generate-3d', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          imageId: uploadedImageId,
+          imageUrl: uploadedImageUrl,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to start 3D generation')
+      }
+
+      // Redirect to 3D models page
+      router.push('/models-3d')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+    } finally {
+      setGenerating3D(false)
+    }
+  }
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
@@ -115,14 +189,27 @@ export function ImageGenerator() {
         </FadeIn>
 
         <FadeIn delay={0.2}>
-          <Card>
-          <CardHeader>
-            <CardTitle>Create Your Image</CardTitle>
-            <CardDescription>
-              Describe the character or object. Images will be optimized for 3D model generation with full-body view, neutral pose, and clean white background.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+          <Tabs defaultValue="generate" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="generate">
+                <Sparkles className="mr-2 h-4 w-4" />
+                Generate with AI
+              </TabsTrigger>
+              <TabsTrigger value="upload">
+                <Upload className="mr-2 h-4 w-4" />
+                Upload Image
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="generate">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Create Your Image</CardTitle>
+                  <CardDescription>
+                    Describe the character or object. Images will be optimized for 3D model generation with full-body view, neutral pose, and clean white background.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="prompt">Image Prompt</Label>
               <Textarea
@@ -256,8 +343,81 @@ export function ImageGenerator() {
                 </>
               )}
             </AnimatedButton>
-          </CardContent>
-        </Card>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="upload">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Upload Your Image</CardTitle>
+                  <CardDescription>
+                    Upload an existing image to convert into a 3D model. Best results with white background and centered objects.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="file">Select Image</Label>
+                    <Input
+                      id="file"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      disabled={uploading}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      💡 Tip: PNG or JPG files work best. Images with white backgrounds are optimal for 3D conversion.
+                    </p>
+                  </div>
+
+                  {uploadedFile && uploadedImageUrl && (
+                    <div className="space-y-4">
+                      <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
+                        <Image
+                          src={uploadedImageUrl}
+                          alt="Uploaded image"
+                          fill
+                          className="object-contain"
+                          unoptimized
+                        />
+                      </div>
+                      <AnimatedButton
+                        onClick={handleGenerate3DFromUpload}
+                        disabled={generating3D || !uploadedImageId}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {generating3D ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Starting 3D Generation...
+                          </>
+                        ) : (
+                          <>
+                            <Box className="mr-2 h-5 w-5" />
+                            Generate 3D Model (2-3 min)
+                          </>
+                        )}
+                      </AnimatedButton>
+                    </div>
+                  )}
+
+                  {uploading && (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-8 w-8 animate-spin mx-auto mb-2" />
+                      <p className="text-sm text-muted-foreground">Uploading image...</p>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+                      {error}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
         </FadeIn>
 
         {generatedImage && (

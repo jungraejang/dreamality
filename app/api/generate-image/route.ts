@@ -32,6 +32,14 @@ export async function POST(request: Request) {
     // Build comprehensive prompt with user-specified parameters
     const optimizedPrompt = `Full-body, head-to-toe render of ${prompt}, ${pose}, centered composition, ${background}, no shadows, no props unless specified. Clean silhouette for 3D model reference. High-detail, ${view}, ${lighting}, realistic proportions, uncluttered, optimized for 3D model generation.`
 
+    console.log('🎨 Image Generation Request:')
+    console.log('📝 User Prompt:', prompt)
+    console.log('🧍 Pose:', pose)
+    console.log('👁️  View:', view)
+    console.log('🖼️  Background:', background)
+    console.log('💡 Lighting:', lighting)
+    console.log('✨ Full Optimized Prompt:', optimizedPrompt)
+
     // Generate image using OpenAI DALL-E
     const response = await openai.images.generate({
       model: 'dall-e-3',
