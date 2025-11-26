@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Loader2, Sparkles, Box } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
+import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in'
+import { ScaleIn } from '@/components/animations/scale-in'
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState('')
@@ -89,16 +91,19 @@ export function ImageGenerator() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Generate AI Images
-          </h1>
-          <p className="text-muted-foreground">
-            Transform your ideas into stunning visuals with AI
-          </p>
-        </div>
+        <FadeIn>
+          <div className="text-center space-y-2">
+            <h1 className="text-4xl font-bold tracking-tight">
+              Turn your daydreams into reality
+            </h1>
+            <p className="text-muted-foreground">
+              Transform your ideas into stunning visuals with AI
+            </p>
+          </div>
+        </FadeIn>
 
-        <Card>
+        <FadeIn delay={0.2}>
+          <Card>
           <CardHeader>
             <CardTitle>Create Your Image</CardTitle>
             <CardDescription>
@@ -127,7 +132,7 @@ export function ImageGenerator() {
               </div>
             )}
 
-            <Button
+            <AnimatedButton
               onClick={handleGenerate}
               disabled={loading || !prompt.trim()}
               className="w-full"
@@ -144,12 +149,14 @@ export function ImageGenerator() {
                   Generate Image
                 </>
               )}
-            </Button>
+            </AnimatedButton>
           </CardContent>
         </Card>
+        </FadeIn>
 
         {generatedImage && (
-          <Card>
+          <ScaleIn>
+            <Card>
             <CardHeader>
               <CardTitle>Generated Image</CardTitle>
               <CardDescription>Your AI-generated masterpiece - Ready for 3D conversion!</CardDescription>
@@ -166,7 +173,7 @@ export function ImageGenerator() {
               </div>
               
               {/* Primary Action: Generate 3D */}
-              <Button
+              <AnimatedButton
                 onClick={handleGenerate3D}
                 disabled={generating3D || !imageId}
                 className="w-full"
@@ -183,18 +190,18 @@ export function ImageGenerator() {
                     Generate 3D Model (2-3 min)
                   </>
                 )}
-              </Button>
+              </AnimatedButton>
 
               {/* Secondary Actions */}
               <div className="flex gap-2">
-                <Button
+                <AnimatedButton
                   variant="outline"
                   className="flex-1"
                   onClick={() => window.open(generatedImage, '_blank')}
                 >
                   Open Full Size
-                </Button>
-                <Button
+                </AnimatedButton>
+                <AnimatedButton
                   variant="outline"
                   className="flex-1"
                   onClick={() => {
@@ -205,7 +212,7 @@ export function ImageGenerator() {
                   }}
                 >
                   Download
-                </Button>
+                </AnimatedButton>
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
@@ -213,6 +220,7 @@ export function ImageGenerator() {
               </p>
             </CardContent>
           </Card>
+          </ScaleIn>
         )}
 
         <div className="text-center">

@@ -2,9 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { ArrowLeft, Box } from 'lucide-react'
-import { ImageCard } from '@/components/gallery/image-card'
+import { GalleryGrid } from './page-client'
 
 interface GeneratedImage {
   id: string
@@ -41,16 +41,16 @@ export default async function GalleryPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/models-3d">
-              <Button variant="outline">
+              <AnimatedButton variant="outline">
                 <Box className="mr-2 h-4 w-4" />
                 3D Models
-              </Button>
+              </AnimatedButton>
             </Link>
             <Link href="/">
-              <Button variant="outline">
+              <AnimatedButton variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
-              </Button>
+              </AnimatedButton>
             </Link>
           </div>
         </div>
@@ -73,19 +73,13 @@ export default async function GalleryPage() {
             </CardHeader>
             <CardContent>
               <Link href="/">
-                <Button>Generate Your First Image</Button>
+                <AnimatedButton>Generate Your First Image</AnimatedButton>
               </Link>
             </CardContent>
           </Card>
         )}
 
-        {images && images.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {images.map((image: GeneratedImage) => (
-              <ImageCard key={image.id} image={image} />
-            ))}
-          </div>
-        )}
+        {images && images.length > 0 && <GalleryGrid images={images} />}
       </div>
     </div>
   )

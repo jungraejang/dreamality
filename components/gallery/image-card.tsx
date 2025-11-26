@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { Box, Download, Eye, Loader2 } from 'lucide-react'
 
 interface ImageCardProps {
@@ -78,14 +78,14 @@ export function ImageCard({ image }: ImageCardProps) {
           <p className="text-xs text-destructive">{error}</p>
         )}
         <div className="flex gap-2">
-          <Button
+          <AnimatedButton
             variant="outline"
             size="sm"
             onClick={() => window.open(image.image_url, '_blank')}
           >
             <Eye className="h-4 w-4" />
-          </Button>
-          <Button
+          </AnimatedButton>
+          <AnimatedButton
             variant="outline"
             size="sm"
             onClick={() => {
@@ -96,8 +96,8 @@ export function ImageCard({ image }: ImageCardProps) {
             }}
           >
             <Download className="h-4 w-4" />
-          </Button>
-          <Button
+          </AnimatedButton>
+          <AnimatedButton
             size="sm"
             className="flex-1"
             onClick={handleGenerate3D}
@@ -114,7 +114,7 @@ export function ImageCard({ image }: ImageCardProps) {
                 Generate 3D
               </>
             )}
-          </Button>
+          </AnimatedButton>
         </div>
       </CardContent>
     </Card>

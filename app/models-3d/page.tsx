@@ -2,17 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { ArrowLeft, Image as ImageIcon } from 'lucide-react'
-import { ModelStatusCard } from '@/components/3d/model-status-card'
-import { Model3D } from '@/types/database.types'
-
-interface Model3DWithImage extends Omit<Model3D, 'image'> {
-  image?: {
-    prompt: string
-    image_url: string
-  }
-}
+import { ModelsGrid } from './page-client'
 
 export default async function Models3DPage() {
   const supabase = await createClient()
@@ -46,16 +38,16 @@ export default async function Models3DPage() {
           </div>
           <div className="flex gap-2">
             <Link href="/gallery">
-              <Button variant="outline">
+              <AnimatedButton variant="outline">
                 <ImageIcon className="mr-2 h-4 w-4" />
                 Image Gallery
-              </Button>
+              </AnimatedButton>
             </Link>
             <Link href="/">
-              <Button variant="outline">
+              <AnimatedButton variant="outline">
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back
-              </Button>
+              </AnimatedButton>
             </Link>
           </div>
         </div>
@@ -78,19 +70,13 @@ export default async function Models3DPage() {
             </CardHeader>
             <CardContent>
               <Link href="/gallery">
-                <Button>Go to Gallery</Button>
+                <AnimatedButton>Go to Gallery</AnimatedButton>
               </Link>
             </CardContent>
           </Card>
         )}
 
-        {models && models.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {models.map((model: Model3DWithImage) => (
-              <ModelStatusCard key={model.id} model={model} />
-            ))}
-          </div>
-        )}
+        {models && models.length > 0 && <ModelsGrid models={models} />}
       </div>
     </div>
   )

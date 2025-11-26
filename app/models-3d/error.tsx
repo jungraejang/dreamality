@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AlertCircle } from 'lucide-react'
 
@@ -34,10 +34,10 @@ export default function Error({
               {error.message || 'An unexpected error occurred'}
             </p>
             <div className="flex gap-2">
-              <Button onClick={reset}>Try Again</Button>
-              <Button variant="outline" onClick={() => window.location.href = '/'}>
+              <AnimatedButton onClick={reset}>Try Again</AnimatedButton>
+              <AnimatedButton variant="outline" onClick={() => window.location.href = '/'}>
                 Go Home
-              </Button>
+              </AnimatedButton>
             </div>
           </CardContent>
         </Card>

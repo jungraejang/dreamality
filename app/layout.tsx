@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserNav } from "@/components/auth/user-nav";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -31,7 +32,11 @@ export default async function RootLayout({
         >
           <header className="border-b bg-background">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <h1 className="text-2xl font-bold text-primary">Dreamality</h1>
+              <Link href="/">
+                <h1 className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer">
+                  Dreamality
+                </h1>
+              </Link>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <UserNav user={user} />

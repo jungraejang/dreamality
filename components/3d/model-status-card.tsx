@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { AnimatedButton } from '@/components/animated-button'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Download, Eye, CheckCircle2, XCircle, Clock } from 'lucide-react'
 import { ModelViewer } from './model-viewer'
@@ -166,28 +166,28 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
           {model.status === 'SUCCEEDED' && model.glb_url && (
             <>
               <div className="flex flex-wrap gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => window.open(model.glb_url!, '_blank')}
-                  className="flex-1"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download GLB
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowViewer(!showViewer)}
-                >
-                  <Eye className="mr-2 h-4 w-4" />
-                  {showViewer ? 'Hide' : 'Preview'}
-                </Button>
+              <AnimatedButton
+                size="sm"
+                onClick={() => window.open(model.glb_url!, '_blank')}
+                className="flex-1"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download GLB
+              </AnimatedButton>
+              <AnimatedButton
+                size="sm"
+                variant="outline"
+                onClick={() => setShowViewer(!showViewer)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                {showViewer ? 'Hide' : 'Preview'}
+              </AnimatedButton>
               </div>
               {(model.fbx_url || model.usdz_url || model.obj_url || model.stl_url) && (
                 <div className="space-y-2">
                   <div className="flex gap-2">
                     {model.fbx_url && (
-                      <Button
+                      <AnimatedButton
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(model.fbx_url!, '_blank')}
@@ -195,10 +195,10 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
                       >
                         <Download className="mr-2 h-4 w-4" />
                         FBX
-                      </Button>
+                      </AnimatedButton>
                     )}
                     {model.usdz_url && (
-                      <Button
+                      <AnimatedButton
                         size="sm"
                         variant="outline"
                         onClick={() => window.open(model.usdz_url!, '_blank')}
@@ -206,13 +206,13 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
                       >
                         <Download className="mr-2 h-4 w-4" />
                         USDZ
-                      </Button>
+                      </AnimatedButton>
                     )}
                   </div>
                   {(model.obj_url || model.stl_url) && (
                     <div className="flex gap-2">
                       {model.obj_url && (
-                        <Button
+                        <AnimatedButton
                           size="sm"
                           variant="outline"
                           onClick={() => window.open(model.obj_url!, '_blank')}
@@ -220,10 +220,10 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
                         >
                           <Download className="mr-2 h-4 w-4" />
                           OBJ
-                        </Button>
+                        </AnimatedButton>
                       )}
                       {model.stl_url && (
-                        <Button
+                        <AnimatedButton
                           size="sm"
                           variant="outline"
                           onClick={() => window.open(model.stl_url!, '_blank')}
@@ -231,7 +231,7 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
                         >
                           <Download className="mr-2 h-4 w-4" />
                           STL
-                        </Button>
+                        </AnimatedButton>
                       )}
                     </div>
                   )}
@@ -241,7 +241,7 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
           )}
 
           {(model.status === 'PENDING' || model.status === 'IN_PROGRESS') && (
-            <Button
+            <AnimatedButton
               size="sm"
               variant="outline"
               onClick={checkStatus}
@@ -255,7 +255,7 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
               ) : (
                 'Check Status'
               )}
-            </Button>
+            </AnimatedButton>
           )}
         </div>
       </CardContent>
