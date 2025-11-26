@@ -33,7 +33,7 @@ export default async function RootLayout({
           <header className="border-b bg-background">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
               <Link href="/">
-                <h1 className="text-2xl font-bold text-primary hover:opacity-80 transition-opacity cursor-pointer">
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#f95738] to-[#009dff] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">
                   Dreamality
                 </h1>
               </Link>

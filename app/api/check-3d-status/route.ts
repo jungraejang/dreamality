@@ -160,10 +160,10 @@ export async function POST(request: Request) {
       error_message: updateData.error_message,
       progress: meshyData.progress || 0,
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error checking 3D status:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to check status' },
+      { error: error instanceof Error ? error.message : 'Failed to check status' },
       { status: 500 }
     )
   }

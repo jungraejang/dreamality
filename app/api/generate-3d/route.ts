@@ -50,6 +50,7 @@ export async function POST(request: Request) {
       body: JSON.stringify({
         image_url: imageUrl,
         enable_pbr: true,
+        ai_model: 'latest', // Using Meshy 6 Preview (latest model)
       }),
     })
 
@@ -92,10 +93,10 @@ export async function POST(request: Request) {
       modelId: model3d.id,
       message: '3D generation started. This will take 2-3 minutes.',
     })
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error generating 3D model:', error)
     return NextResponse.json(
-      { error: error.message || 'Failed to generate 3D model' },
+      { error: error instanceof Error ? error.message : 'Failed to generate 3D model' },
       { status: 500 }
     )
   }

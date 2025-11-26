@@ -94,10 +94,10 @@ export function ImageGenerator() {
         <FadeIn>
           <div className="text-center space-y-2">
             <h1 className="text-4xl font-bold tracking-tight">
-              Turn your daydreams into reality
+              Turn your <span className="bg-gradient-to-r from-[#f95738] to-[#009dff]">daydreams</span> into <span className="bg-gradient-to-r from-[#f95738] to-[#009dff]">reality</span>
             </h1>
             <p className="text-muted-foreground">
-              Transform your ideas into stunning visuals with AI
+              Transform your ideas into printable 3D models with AI
             </p>
           </div>
         </FadeIn>
@@ -135,7 +135,7 @@ export function ImageGenerator() {
             <AnimatedButton
               onClick={handleGenerate}
               disabled={loading || !prompt.trim()}
-              className="w-full"
+              className="w-full bg-gradient-to-r from-[#f95738] to-[#009dff] "
               size="lg"
             >
               {loading ? (
@@ -176,7 +176,7 @@ export function ImageGenerator() {
               <AnimatedButton
                 onClick={handleGenerate3D}
                 disabled={generating3D || !imageId}
-                className="w-full"
+                className="w-full bg-gradient-to-r from-[#f95738] to-[#009dff]"
                 size="lg"
               >
                 {generating3D ? (
