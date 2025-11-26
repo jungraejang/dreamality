@@ -330,8 +330,10 @@ export function ImageGenerator() {
         )}
 
         <div className="text-center">
-          <Link href="/gallery" className="text-sm text-muted-foreground hover:text-primary">
-            View your image gallery →
+          <Link href="/gallery">
+            <AnimatedButton variant="outline" size="sm">
+              View your image gallery →
+            </AnimatedButton>
           </Link>
         </div>
       </div>
