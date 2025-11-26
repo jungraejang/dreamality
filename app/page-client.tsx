@@ -6,7 +6,8 @@ import { AnimatedButton } from '@/components/animated-button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { Loader2, Sparkles, Box } from 'lucide-react'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Loader2, Sparkles, Box, ChevronDown, ChevronUp } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in'
@@ -14,6 +15,11 @@ import { ScaleIn } from '@/components/animations/scale-in'
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState('')
+  const [pose, setPose] = useState('neutral standing pose')
+  const [view, setView] = useState('front view')
+  const [background, setBackground] = useState('plain white background')
+  const [lighting, setLighting] = useState('evenly lit')
+  const [showAdvanced, setShowAdvanced] = useState(false)
   const [loading, setLoading] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageId, setImageId] = useState<string | null>(null)
@@ -38,7 +44,13 @@ export function ImageGenerator() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt }),
+        body: JSON.stringify({ 
+          prompt,
+          pose,
+          view,
+          background,
+          lighting,
+        }),
       })
 
       const data = await response.json()
@@ -122,9 +134,103 @@ export function ImageGenerator() {
                 disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
-                💡 Tip: Describe the character or object. Full-body, neutral pose, white background, and optimal lighting will be added automatically.
+                💡 Tip: Describe the character or object. Customize pose, view, and lighting below.
               </p>
             </div>
+
+            {/* Advanced Options Toggle */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {showAdvanced ? (
+                  <>
+                    <ChevronUp className="h-4 w-4" />
+                    Hide Advanced Options
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4" />
+                    Show Advanced Options
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Advanced Options */}
+            {showAdvanced && (
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/50">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pose">Pose</Label>
+                    <Select value={pose} onValueChange={setPose}>
+                      <SelectTrigger id="pose">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="neutral standing pose">Neutral Standing</SelectItem>
+                        <SelectItem value="action pose">Action Pose</SelectItem>
+                        <SelectItem value="sitting pose">Sitting</SelectItem>
+                        <SelectItem value="walking pose">Walking</SelectItem>
+                        <SelectItem value="T-pose">T-Pose</SelectItem>
+                        <SelectItem value="A-pose">A-Pose</SelectItem>
+                        <SelectItem value="dynamic action pose">Dynamic Action</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="view">View Angle</Label>
+                    <Select value={view} onValueChange={setView}>
+                      <SelectTrigger id="view">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="front view">Front View</SelectItem>
+                        <SelectItem value="three-quarter view">3/4 View</SelectItem>
+                        <SelectItem value="side view">Side View</SelectItem>
+                        <SelectItem value="back view">Back View</SelectItem>
+                        <SelectItem value="isometric view">Isometric</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="background">Background</Label>
+                    <Select value={background} onValueChange={setBackground}>
+                      <SelectTrigger id="background">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="plain white background">White</SelectItem>
+                        <SelectItem value="plain black background">Black</SelectItem>
+                        <SelectItem value="plain gray background">Gray</SelectItem>
+                        <SelectItem value="gradient background">Gradient</SelectItem>
+                        <SelectItem value="transparent background">Transparent</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="lighting">Lighting</Label>
+                    <Select value={lighting} onValueChange={setLighting}>
+                      <SelectTrigger id="lighting">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="evenly lit">Even Lighting</SelectItem>
+                        <SelectItem value="studio lighting">Studio Lighting</SelectItem>
+                        <SelectItem value="dramatic lighting">Dramatic</SelectItem>
+                        <SelectItem value="soft lighting">Soft Lighting</SelectItem>
+                        <SelectItem value="natural lighting">Natural</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {error && (
               <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">

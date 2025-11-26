@@ -17,14 +17,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { prompt } = await request.json()
+    const { 
+      prompt, 
+      pose = 'neutral standing pose',
+      view = 'front view',
+      background = 'plain white background',
+      lighting = 'evenly lit'
+    } = await request.json()
 
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json({ error: 'Invalid prompt' }, { status: 400 })
     }
 
-    // Add comprehensive prompt structure for optimal 3D model generation
-    const optimizedPrompt = `Full-body, head-to-toe render of ${prompt}, neutral standing pose, centered composition, plain white background, no shadows, no props unless specified. Clean silhouette for 3D model reference. High-detail, front view, evenly lit, realistic proportions, uncluttered, optimized for 3D model generation.`
+    // Build comprehensive prompt with user-specified parameters
+    const optimizedPrompt = `Full-body, head-to-toe render of ${prompt}, ${pose}, centered composition, ${background}, no shadows, no props unless specified. Clean silhouette for 3D model reference. High-detail, ${view}, ${lighting}, realistic proportions, uncluttered, optimized for 3D model generation.`
 
     // Generate image using OpenAI DALL-E
     const response = await openai.images.generate({
