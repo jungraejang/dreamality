@@ -29,14 +29,14 @@ export default async function Models3DPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tight">Your 3D Models</h1>
             <p className="text-muted-foreground mt-2">
               AI-generated 3D models from your images
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Link href="/gallery">
               <AnimatedButton variant="outline">
                 <ImageIcon className="mr-2 h-4 w-4" />

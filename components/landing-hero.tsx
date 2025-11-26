@@ -12,7 +12,7 @@ export function LandingHero() {
       <div className="max-w-4xl mx-auto text-center space-y-8">
         <FadeIn>
           <div className="space-y-4">
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight">
             Turn Your Ideas Into
             <span className="block text-primary mt-2">3D-Ready AI Images</span>
           </h1>
@@ -26,13 +26,13 @@ export function LandingHero() {
         <FadeIn delay={0.2}>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/signup">
-              <AnimatedButton size="lg" className="text-lg px-8">
+              <AnimatedButton size="lg" className="text-lg px-8 w-full sm:w-auto">
                 <Sparkles className="mr-2 h-5 w-5" />
                 Get Started Free
               </AnimatedButton>
             </Link>
             <Link href="/login">
-              <AnimatedButton size="lg" variant="outline" className="text-lg px-8">
+              <AnimatedButton size="lg" variant="outline" className="text-lg px-8 w-full sm:w-auto">
                 Sign In
               </AnimatedButton>
             </Link>

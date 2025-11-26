@@ -178,8 +178,8 @@ export function ImageGenerator() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto space-y-8">
         <FadeIn>
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">
+          <div className="text-center space-y-3 px-2">
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight leading-tight">
               Turn your <span className="bg-gradient-to-r from-[#f95738] to-[#009dff]">daydreams</span> into <span className="bg-gradient-to-r from-[#f95738] to-[#009dff]">reality</span>
             </h1>
             <p className="text-muted-foreground">
@@ -459,17 +459,17 @@ export function ImageGenerator() {
               </AnimatedButton>
 
               {/* Secondary Actions */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <AnimatedButton
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 w-full"
                   onClick={() => window.open(generatedImage, '_blank')}
                 >
                   Open Full Size
                 </AnimatedButton>
                 <AnimatedButton
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 w-full"
                   onClick={() => {
                     const link = document.createElement('a')
                     link.href = generatedImage

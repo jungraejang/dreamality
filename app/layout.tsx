@@ -24,20 +24,15 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
           <header className="border-b bg-background">
-            <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div className="container mx-auto px-4 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <Link href="/">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-[#f95738] to-[#009dff] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">
                   Dreamality
                 </h1>
               </Link>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 justify-between sm:justify-end">
                 <ThemeToggle />
                 <UserNav user={user} />
               </div>
