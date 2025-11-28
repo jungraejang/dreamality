@@ -131,6 +131,34 @@ export function SandboxClient({ models }: SandboxClientProps) {
     )
   }, [selectedModelId])
 
+  const handlePositionChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
+    if (!selectedModelId) return
+    
+    setPlacedModels((prev) =>
+      prev.map((pm) => {
+        if (pm.id !== selectedModelId) return pm
+        const newPosition = [...pm.position] as [number, number, number]
+        const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2
+        newPosition[axisIndex] = value
+        return { ...pm, position: newPosition }
+      })
+    )
+  }, [selectedModelId])
+
+  const handleRotationChange = useCallback((axis: 'x' | 'y' | 'z', value: number) => {
+    if (!selectedModelId) return
+    
+    setPlacedModels((prev) =>
+      prev.map((pm) => {
+        if (pm.id !== selectedModelId) return pm
+        const newRotation = [...pm.rotation] as [number, number, number]
+        const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2
+        newRotation[axisIndex] = value * (Math.PI / 180) // Convert degrees to radians
+        return { ...pm, rotation: newRotation }
+      })
+    )
+  }, [selectedModelId])
+
   const handleDeleteSelected = useCallback(() => {
     if (!selectedModelId) return
     
@@ -253,28 +281,122 @@ export function SandboxClient({ models }: SandboxClientProps) {
                   )}
                 </div>
 
-                {/* Scale Controls - fixed height to prevent layout shift */}
+                {/* Transform Controls - fixed height to prevent layout shift */}
                 <div className={`p-3 bg-muted/50 rounded-lg h-[140px] transition-opacity ${selectedModelId && selectedModel ? 'opacity-100' : 'opacity-50'}`}>
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-medium">Scale Controls</span>
-                    <div className="flex items-center gap-2">
-                      <Checkbox
-                        id="uniform-scale"
-                        checked={uniformScale}
-                        onCheckedChange={(checked) => setUniformScale(checked as boolean)}
-                        disabled={!selectedModelId}
-                      />
-                      <Label htmlFor="uniform-scale" className="text-xs">
-                        Uniform
-                      </Label>
-                    </div>
+                    <span className="text-sm font-medium">
+                      {transformMode === 'translate' ? 'Position' : transformMode === 'rotate' ? 'Rotation' : 'Scale'} Controls
+                    </span>
+                    {transformMode === 'scale' && (
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="uniform-scale"
+                          checked={uniformScale}
+                          onCheckedChange={(checked) => setUniformScale(checked as boolean)}
+                          disabled={!selectedModelId}
+                        />
+                        <Label htmlFor="uniform-scale" className="text-xs">
+                          Uniform
+                        </Label>
+                      </div>
+                    )}
                   </div>
                   
                   {!selectedModelId ? (
                     <p className="text-xs text-muted-foreground text-center py-6">
-                      Select a model to adjust scale
+                      Select a model to adjust {transformMode === 'translate' ? 'position' : transformMode === 'rotate' ? 'rotation' : 'scale'}
                     </p>
-                  ) : selectedModel && uniformScale ? (
+                  ) : selectedModel && transformMode === 'translate' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-red-500 w-4">X</Label>
+                        <Slider
+                          value={[selectedModel.position[0]]}
+                          min={-10}
+                          max={10}
+                          step={0.1}
+                          onValueChange={([v]) => handlePositionChange('x', v)}
+                          className="flex-1 [&_[role=slider]]:bg-red-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {selectedModel.position[0].toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-green-500 w-4">Y</Label>
+                        <Slider
+                          value={[selectedModel.position[1]]}
+                          min={0}
+                          max={5}
+                          step={0.1}
+                          onValueChange={([v]) => handlePositionChange('y', v)}
+                          className="flex-1 [&_[role=slider]]:bg-green-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {selectedModel.position[1].toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-blue-500 w-4">Z</Label>
+                        <Slider
+                          value={[selectedModel.position[2]]}
+                          min={-10}
+                          max={10}
+                          step={0.1}
+                          onValueChange={([v]) => handlePositionChange('z', v)}
+                          className="flex-1 [&_[role=slider]]:bg-blue-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {selectedModel.position[2].toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : selectedModel && transformMode === 'rotate' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-red-500 w-4">X</Label>
+                        <Slider
+                          value={[selectedModel.rotation[0] * (180 / Math.PI)]}
+                          min={-180}
+                          max={180}
+                          step={1}
+                          onValueChange={([v]) => handleRotationChange('x', v)}
+                          className="flex-1 [&_[role=slider]]:bg-red-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {(selectedModel.rotation[0] * (180 / Math.PI)).toFixed(0)}°
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-green-500 w-4">Y</Label>
+                        <Slider
+                          value={[selectedModel.rotation[1] * (180 / Math.PI)]}
+                          min={-180}
+                          max={180}
+                          step={1}
+                          onValueChange={([v]) => handleRotationChange('y', v)}
+                          className="flex-1 [&_[role=slider]]:bg-green-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {(selectedModel.rotation[1] * (180 / Math.PI)).toFixed(0)}°
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-blue-500 w-4">Z</Label>
+                        <Slider
+                          value={[selectedModel.rotation[2] * (180 / Math.PI)]}
+                          min={-180}
+                          max={180}
+                          step={1}
+                          onValueChange={([v]) => handleRotationChange('z', v)}
+                          className="flex-1 [&_[role=slider]]:bg-blue-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-10 text-right">
+                          {(selectedModel.rotation[2] * (180 / Math.PI)).toFixed(0)}°
+                        </span>
+                      </div>
+                    </div>
+                  ) : selectedModel && transformMode === 'scale' && uniformScale ? (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-xs">Size</Label>
@@ -290,7 +412,7 @@ export function SandboxClient({ models }: SandboxClientProps) {
                         onValueChange={([v]) => handleScaleChange('uniform', v)}
                       />
                     </div>
-                  ) : selectedModel ? (
+                  ) : selectedModel && transformMode === 'scale' ? (
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <Label className="text-xs text-red-500 w-4">X</Label>

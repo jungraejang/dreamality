@@ -27,12 +27,13 @@ interface ModelProps {
 function Model({ url, position, rotation, scale, isSelected, onSelect, onTransformEnd, transformMode }: ModelProps) {
   const { scene } = useGLTF(url, true)
   const groupRef = useRef<THREE.Group>(null!)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformRef = useRef<any>(null)
   const [localTransformMode, setLocalTransformMode] = useState(transformMode)
-  const [yOffset, setYOffset] = useState(0)
+  const [targetObject, setTargetObject] = useState<THREE.Group | null>(null)
   
   // Clone the scene and calculate bounding box to place model on ground
-  const clonedScene = useMemo(() => {
+  const { clonedScene, yOffset } = useMemo(() => {
     const clone = scene.clone(true)
     
     // Calculate bounding box to find the bottom of the model
@@ -40,15 +41,20 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
     const minY = box.min.y
     
     // Offset to place model's bottom at y=0
-    setYOffset(-minY)
-    
-    return clone
+    return { clonedScene: clone, yOffset: -minY }
   }, [scene])
 
   // Update transform mode when prop changes
   useEffect(() => {
     setLocalTransformMode(transformMode)
   }, [transformMode])
+
+  // Set target object after mount and when selection changes
+  useEffect(() => {
+    if (groupRef.current) {
+      setTargetObject(groupRef.current)
+    }
+  }, [isSelected])
 
   // Handle transform end
   useEffect(() => {
@@ -103,10 +109,10 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
           </mesh>
         )}
       </group>
-      {isSelected && (
+      {isSelected && targetObject && (
         <TransformControls
           ref={transformRef}
-          object={groupRef.current}
+          object={targetObject}
           mode={localTransformMode}
           size={0.75}
           showX={true}
