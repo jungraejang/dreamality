@@ -4,7 +4,10 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2 } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2 } from 'lucide-react'
+import { Slider } from '@/components/ui/slider'
+import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { SandboxScene } from '@/components/sandbox/sandbox-scene'
 import { ModelSelector } from '@/components/sandbox/model-selector'
 import { FadeIn } from '@/components/animations/fade-in'
@@ -24,6 +27,7 @@ interface PlacedModel {
   url: string
   position: [number, number, number]
   rotation: [number, number, number]
+  scale: [number, number, number]
 }
 
 interface SandboxClientProps {
@@ -34,7 +38,8 @@ export function SandboxClient({ models }: SandboxClientProps) {
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set())
   const [placedModels, setPlacedModels] = useState<PlacedModel[]>([])
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
-  const [transformMode, setTransformMode] = useState<'translate' | 'rotate'>('translate')
+  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate')
+  const [uniformScale, setUniformScale] = useState(true)
   const instanceCounterRef = useRef(0)
 
   const handleToggleModel = useCallback((modelId: string) => {
@@ -70,6 +75,7 @@ export function SandboxClient({ models }: SandboxClientProps) {
               url: model.glb_url,
               position: [x, 0, z],
               rotation: [0, 0, 0],
+              scale: [1, 1, 1],
             },
           ]
         })
@@ -92,14 +98,38 @@ export function SandboxClient({ models }: SandboxClientProps) {
   const handleModelTransform = useCallback((
     instanceId: string, 
     position: [number, number, number], 
-    rotation: [number, number, number]
+    rotation: [number, number, number],
+    scale: [number, number, number]
   ) => {
     setPlacedModels((prev) =>
       prev.map((pm) =>
-        pm.id === instanceId ? { ...pm, position, rotation } : pm
+        pm.id === instanceId ? { ...pm, position, rotation, scale } : pm
       )
     )
   }, [])
+
+  // Get selected model's current scale
+  const selectedModel = placedModels.find((pm) => pm.id === selectedModelId)
+  
+  const handleScaleChange = useCallback((axis: 'x' | 'y' | 'z' | 'uniform', value: number) => {
+    if (!selectedModelId) return
+    
+    setPlacedModels((prev) =>
+      prev.map((pm) => {
+        if (pm.id !== selectedModelId) return pm
+        
+        let newScale: [number, number, number]
+        if (axis === 'uniform') {
+          newScale = [value, value, value]
+        } else {
+          newScale = [...pm.scale] as [number, number, number]
+          const axisIndex = axis === 'x' ? 0 : axis === 'y' ? 1 : 2
+          newScale[axisIndex] = value
+        }
+        return { ...pm, scale: newScale }
+      })
+    )
+  }, [selectedModelId])
 
   const handleDeleteSelected = useCallback(() => {
     if (!selectedModelId) return
@@ -184,7 +214,7 @@ export function SandboxClient({ models }: SandboxClientProps) {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Transform Toolbar */}
-                <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-muted rounded-lg">
                   <span className="text-sm font-medium mr-2">Tools:</span>
                   <AnimatedButton
                     size="sm"
@@ -202,6 +232,14 @@ export function SandboxClient({ models }: SandboxClientProps) {
                     <RotateCw className="h-4 w-4 mr-1" />
                     Rotate
                   </AnimatedButton>
+                  <AnimatedButton
+                    size="sm"
+                    variant={transformMode === 'scale' ? 'default' : 'outline'}
+                    onClick={() => setTransformMode('scale')}
+                  >
+                    <Maximize2 className="h-4 w-4 mr-1" />
+                    Scale
+                  </AnimatedButton>
                   <div className="flex-1" />
                   {selectedModelId && (
                     <AnimatedButton
@@ -213,6 +251,91 @@ export function SandboxClient({ models }: SandboxClientProps) {
                       Delete
                     </AnimatedButton>
                   )}
+                </div>
+
+                {/* Scale Controls - fixed height to prevent layout shift */}
+                <div className={`p-3 bg-muted/50 rounded-lg h-[140px] transition-opacity ${selectedModelId && selectedModel ? 'opacity-100' : 'opacity-50'}`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-sm font-medium">Scale Controls</span>
+                    <div className="flex items-center gap-2">
+                      <Checkbox
+                        id="uniform-scale"
+                        checked={uniformScale}
+                        onCheckedChange={(checked) => setUniformScale(checked as boolean)}
+                        disabled={!selectedModelId}
+                      />
+                      <Label htmlFor="uniform-scale" className="text-xs">
+                        Uniform
+                      </Label>
+                    </div>
+                  </div>
+                  
+                  {!selectedModelId ? (
+                    <p className="text-xs text-muted-foreground text-center py-6">
+                      Select a model to adjust scale
+                    </p>
+                  ) : selectedModel && uniformScale ? (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label className="text-xs">Size</Label>
+                        <span className="text-xs text-muted-foreground">
+                          {selectedModel.scale[0].toFixed(2)}x
+                        </span>
+                      </div>
+                      <Slider
+                        value={[selectedModel.scale[0]]}
+                        min={0.1}
+                        max={5}
+                        step={0.1}
+                        onValueChange={([v]) => handleScaleChange('uniform', v)}
+                      />
+                    </div>
+                  ) : selectedModel ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-red-500 w-4">X</Label>
+                        <Slider
+                          value={[selectedModel.scale[0]]}
+                          min={0.1}
+                          max={5}
+                          step={0.1}
+                          onValueChange={([v]) => handleScaleChange('x', v)}
+                          className="flex-1 [&_[role=slider]]:bg-red-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-8 text-right">
+                          {selectedModel.scale[0].toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-green-500 w-4">Y</Label>
+                        <Slider
+                          value={[selectedModel.scale[1]]}
+                          min={0.1}
+                          max={5}
+                          step={0.1}
+                          onValueChange={([v]) => handleScaleChange('y', v)}
+                          className="flex-1 [&_[role=slider]]:bg-green-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-8 text-right">
+                          {selectedModel.scale[1].toFixed(1)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-xs text-blue-500 w-4">Z</Label>
+                        <Slider
+                          value={[selectedModel.scale[2]]}
+                          min={0.1}
+                          max={5}
+                          step={0.1}
+                          onValueChange={([v]) => handleScaleChange('z', v)}
+                          className="flex-1 [&_[role=slider]]:bg-blue-500"
+                        />
+                        <span className="text-xs text-muted-foreground w-8 text-right">
+                          {selectedModel.scale[2].toFixed(1)}
+                        </span>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <SandboxScene
