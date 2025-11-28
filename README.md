@@ -1,10 +1,10 @@
 # Dreamality - AI Image Generation for 3D Models
 
-A modern web application that generates AI images optimized for 3D model creation using OpenAI's DALL-E API, built with Next.js, Supabase, and shadcn/ui.
+A modern web application that generates AI images optimized for 3D model creation using Replicate's Flux 2.0 Pro, built with Next.js, Supabase, and shadcn/ui.
 
 ## Features
 
-- 🎨 **AI Image Generation**: Generate images from text prompts using OpenAI's DALL-E 3
+- 🎨 **AI Image Generation**: Generate images from text prompts using Replicate's Flux 2.0 Pro
 - 🎯 **3D-Optimized**: Automatically adds white background for seamless 3D model generation
 - 🎲 **3D Model Generation**: Convert images to 3D models using Meshy API (preview mode)
 - 👁️ **3D Viewer**: Interactive 3D model viewer with Three.js
@@ -59,8 +59,12 @@ Create a `.env.local` file in the root directory:
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# OpenAI
-OPENAI_API_KEY=your_openai_api_key
+# Replicate (for AI image generation - safe content)
+REPLICATE_API_TOKEN=your_replicate_api_token
+
+# Hugging Face (for NSFW content - optional)
+HF_ENDPOINT_URL=https://uny9gkjaqbthskon.us-east-1.aws.endpoints.huggingface.cloud
+HF_TOKEN=your_huggingface_token
 
 # Meshy (for 3D model generation)
 MESHY_API_KEY=your_meshy_api_key
@@ -71,10 +75,10 @@ MESHY_API_KEY=your_meshy_api_key
 - Navigate to **API** section
 - Copy the `Project URL` and `anon/public` key
 
-**To get your OpenAI API key:**
-- Go to [platform.openai.com](https://platform.openai.com)
-- Navigate to **API Keys**
-- Create a new secret key
+**To get your Replicate API token:**
+- Go to [replicate.com](https://replicate.com)
+- Sign up and navigate to **Account Settings** → **API Tokens**
+- Create a new API token
 
 **To get your Meshy API key:**
 - Go to [meshy.ai](https://www.meshy.ai)

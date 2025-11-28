@@ -1,11 +1,15 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
-import OpenAI from 'openai'
+import Replicate from 'replicate'
+import { HfInference } from '@huggingface/inference'
 
 export async function POST(request: Request) {
-  const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || '',
+  const replicate = new Replicate({
+    auth: process.env.REPLICATE_API_TOKEN || '',
   })
+  
+  const hf = new HfInference(process.env.HF_TOKEN)
+  
   try {
     // Check authentication
     const supabase = await createClient()
@@ -22,7 +26,8 @@ export async function POST(request: Request) {
       pose = 'neutral standing pose',
       view = 'front view',
       background = 'plain white background',
-      lighting = 'evenly lit'
+      lighting = 'evenly lit',
+      nsfw = false
     } = await request.json()
 
     if (!prompt || typeof prompt !== 'string') {
@@ -38,31 +43,120 @@ export async function POST(request: Request) {
     console.log('👁️  View:', view)
     console.log('🖼️  Background:', background)
     console.log('💡 Lighting:', lighting)
+    console.log('🔞 NSFW:', nsfw)
     console.log('✨ Full Optimized Prompt:', optimizedPrompt)
 
-    // Generate image using OpenAI DALL-E
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: optimizedPrompt,
-      n: 1,
-      size: '1024x1024',
-      quality: 'standard',
-    })
+    let buffer: Buffer
 
-    const imageUrl = response.data?.[0]?.url
+    if (nsfw) {
+      // Use Hugging Face NSFW model
+      console.log('🔞 Using NSFW model (Hugging Face Inference Endpoint)...')
+      
+      if (!process.env.HF_ENDPOINT_URL || !process.env.HF_TOKEN) {
+        console.error('❌ Hugging Face credentials not configured')
+        return NextResponse.json({ error: 'NSFW model not configured' }, { status: 500 })
+      }
 
-    if (!imageUrl) {
-      return NextResponse.json({ error: 'Failed to generate image' }, { status: 500 })
+      const response = await fetch(process.env.HF_ENDPOINT_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          inputs: optimizedPrompt,
+          parameters: {
+            num_inference_steps: 30,
+            guidance_scale: 7.5,
+          }
+        }),
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('❌ HF API error:', errorText)
+        return NextResponse.json({ error: 'Failed to generate NSFW image' }, { status: 500 })
+      }
+
+      const contentType = response.headers.get('content-type')
+      console.log('📦 HF Response content-type:', contentType)
+
+      // Check if response is JSON (base64 encoded) or binary
+      if (contentType?.includes('application/json')) {
+        const jsonData = await response.json()
+        console.log('📦 HF returned JSON, checking for base64...')
+        
+        // Handle base64 encoded image
+        if (typeof jsonData === 'string' && jsonData.startsWith('iVBOR')) {
+          // Direct base64 string
+          buffer = Buffer.from(jsonData, 'base64')
+        } else if (jsonData.image && typeof jsonData.image === 'string') {
+          // Base64 in image field
+          buffer = Buffer.from(jsonData.image, 'base64')
+        } else if (Array.isArray(jsonData) && jsonData[0]) {
+          // Array of base64 strings
+          buffer = Buffer.from(jsonData[0], 'base64')
+        } else {
+          console.error('❌ Unexpected JSON format:', jsonData)
+          return NextResponse.json({ error: 'Unexpected response format' }, { status: 500 })
+        }
+      } else {
+        // Binary image data
+        const imageBlob = await response.blob()
+        const arrayBuffer = await imageBlob.arrayBuffer()
+        buffer = Buffer.from(arrayBuffer)
+      }
+      
+      console.log('✅ NSFW image generated, size:', buffer.length, 'bytes')
+    } else {
+      // Use Replicate Flux 2.0 Pro (safe)
+      console.log('🚀 Using Flux 2.0 Pro (Replicate)...')
+      
+      if (!process.env.REPLICATE_API_TOKEN) {
+        console.error('❌ REPLICATE_API_TOKEN is not configured')
+        return NextResponse.json({ error: 'Replicate API token not configured' }, { status: 500 })
+      }
+
+      const output = await replicate.run(
+        "black-forest-labs/flux-2-pro",
+        {
+          input: {
+            prompt: optimizedPrompt,
+            width: 1024,
+            height: 1024,
+            output_format: "png",
+            output_quality: 90,
+          }
+        }
+      )
+
+      console.log('📦 Replicate output type:', typeof output)
+
+      // Replicate returns the image data as a stream of Uint8Arrays
+      const chunks: Uint8Array[] = []
+      
+      if (output && typeof output === 'object' && Symbol.asyncIterator in output) {
+        console.log('📥 Collecting image data stream...')
+        for await (const chunk of output as AsyncIterable<Uint8Array>) {
+          chunks.push(chunk)
+        }
+        console.log('📦 Collected', chunks.length, 'chunks')
+      } else {
+        console.error('❌ Unexpected output format from Replicate')
+        return NextResponse.json({ error: 'Unexpected response format' }, { status: 500 })
+      }
+
+      // Combine all chunks into a single buffer
+      const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0)
+      buffer = Buffer.concat(chunks, totalLength)
+      
+      console.log('✅ Flux 2.0 generated image, size:', buffer.length, 'bytes')
     }
-
-    // Fetch the image data
-    const imageResponse = await fetch(imageUrl)
-    const imageBlob = await imageResponse.blob()
-    const arrayBuffer = await imageBlob.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
 
     // Upload to Supabase Storage
     const fileName = `${user.id}/${Date.now()}.png`
+    console.log('⬆️  Uploading to Supabase:', fileName, 'Size:', buffer.length, 'bytes')
+    
     const { data: uploadData, error: uploadError } = await supabase.storage
       .from('generated-images')
       .upload(fileName, buffer, {
@@ -71,18 +165,20 @@ export async function POST(request: Request) {
       })
 
     if (uploadError) {
-      console.error('Upload error:', uploadError)
-      // Return the temporary URL even if upload fails
+      console.error('❌ Upload error:', uploadError)
       return NextResponse.json({
-        imageUrl,
-        message: 'Image generated but storage failed',
-      })
+        error: 'Image generated but storage failed',
+      }, { status: 500 })
     }
+
+    console.log('✅ Upload successful:', uploadData)
 
     // Get public URL
     const {
       data: { publicUrl },
     } = supabase.storage.from('generated-images').getPublicUrl(fileName)
+
+    console.log('🔗 Public URL:', publicUrl)
 
     // Save metadata to database
     const { data: imageData, error: dbError } = await supabase
@@ -97,8 +193,12 @@ export async function POST(request: Request) {
       .single()
 
     if (dbError) {
-      console.error('Database error:', dbError)
+      console.error('❌ Database error:', dbError)
+    } else {
+      console.log('✅ Image saved to database, ID:', imageData?.id)
     }
+
+    console.log('🎉 Returning response with imageUrl:', publicUrl)
 
     return NextResponse.json({
       imageUrl: publicUrl,
@@ -106,7 +206,11 @@ export async function POST(request: Request) {
       prompt,
     })
   } catch (error) {
-    console.error('Error generating image:', error)
+    console.error('❌ Error generating image:', error)
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to generate image' },
       { status: 500 }

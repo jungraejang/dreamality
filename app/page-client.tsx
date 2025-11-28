@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
-import { Loader2, Sparkles, Box, ChevronDown, ChevronUp, Upload } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Loader2, Sparkles, Box, ChevronDown, ChevronUp, Upload, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in'
@@ -21,11 +22,13 @@ export function ImageGenerator() {
   const [view, setView] = useState('front view')
   const [background, setBackground] = useState('plain white background')
   const [lighting, setLighting] = useState('evenly lit')
+  const [nsfw, setNsfw] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [loading, setLoading] = useState(false)
   const [generatedImage, setGeneratedImage] = useState<string | null>(null)
   const [imageId, setImageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [imageError, setImageError] = useState(false)
   const [generating3D, setGenerating3D] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
@@ -56,6 +59,7 @@ export function ImageGenerator() {
           view,
           background,
           lighting,
+          nsfw,
         }),
       })
 
@@ -65,9 +69,13 @@ export function ImageGenerator() {
         throw new Error(data.error || 'Failed to generate image')
       }
 
+      console.log('✅ Received response:', data)
+      console.log('🖼️  Image URL:', data.imageUrl)
       setGeneratedImage(data.imageUrl)
       setImageId(data.imageId) // Store the image ID for 3D generation
+      setImageError(false)
     } catch (err) {
+      console.error('❌ Frontend error:', err)
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setLoading(false)
@@ -223,6 +231,27 @@ export function ImageGenerator() {
               <p className="text-xs text-muted-foreground">
                 💡 Tip: Describe the character or object. Customize pose, view, and lighting below.
               </p>
+            </div>
+
+            {/* NSFW Toggle */}
+            <div className="flex items-center space-x-2 p-3 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
+              <Checkbox 
+                id="nsfw" 
+                checked={nsfw}
+                onCheckedChange={(checked) => setNsfw(checked as boolean)}
+              />
+              <div className="flex-1">
+                <Label 
+                  htmlFor="nsfw" 
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+                >
+                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                  NSFW Content (18+)
+                </Label>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Enable for mature/adult content generation
+                </p>
+              </div>
             </div>
 
             {/* Advanced Options Toggle */}
@@ -429,13 +458,36 @@ export function ImageGenerator() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative aspect-square w-full overflow-hidden rounded-lg border bg-muted">
-                <Image
-                  src={generatedImage}
-                  alt={prompt}
-                  fill
-                  className="object-contain"
-                  unoptimized
-                />
+                {imageError ? (
+                  <div className="flex items-center justify-center h-full">
+                    <div className="text-center p-4">
+                      <p className="text-destructive mb-2">Failed to load image</p>
+                      <p className="text-xs text-muted-foreground mb-4">URL: {generatedImage}</p>
+                      <AnimatedButton
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(generatedImage!, '_blank')}
+                      >
+                        Open in New Tab
+                      </AnimatedButton>
+                    </div>
+                  </div>
+                ) : (
+                  <Image
+                    src={generatedImage}
+                    alt={prompt}
+                    fill
+                    className="object-contain"
+                    unoptimized
+                    onError={() => {
+                      console.error('❌ Image failed to load:', generatedImage)
+                      setImageError(true)
+                    }}
+                    onLoad={() => {
+                      console.log('✅ Image loaded successfully')
+                    }}
+                  />
+                )}
               </div>
               
               {/* Primary Action: Generate 3D */}
