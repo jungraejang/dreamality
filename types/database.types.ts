@@ -1,3 +1,14 @@
+// Type for placed models in sandbox sessions
+export interface PlacedModel {
+  id: string
+  modelId: string
+  glbUrl: string
+  name: string
+  position: [number, number, number]
+  rotation: [number, number, number]
+  scale: [number, number, number]
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -76,10 +87,43 @@ export interface Database {
           completed_at?: string | null
         }
       }
+      sandbox_sessions: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          description: string | null
+          models: PlacedModel[]
+          thumbnail_url: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          description?: string | null
+          models: PlacedModel[]
+          thumbnail_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          description?: string | null
+          models?: PlacedModel[]
+          thumbnail_url?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }
 
 export type GeneratedImage = Database['public']['Tables']['images']['Row']
 export type Model3D = Database['public']['Tables']['models_3d']['Row']
+export type SandboxSession = Database['public']['Tables']['sandbox_sessions']['Row']
 
