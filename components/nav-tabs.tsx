@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Sparkles, Image as ImageIcon } from 'lucide-react'
+import { Sparkles, Image as ImageIcon, Box } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 export function NavTabs() {
@@ -20,6 +20,12 @@ export function NavTabs() {
       href: '/gallery',
       icon: ImageIcon,
       active: pathname === '/gallery',
+    },
+    {
+      name: 'Sandbox',
+      href: '/sandbox',
+      icon: Box,
+      active: pathname === '/sandbox',
     },
   ]
 
