@@ -4,7 +4,8 @@ import { useState } from 'react'
 import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card'
 import { AnimatedButton } from '@/components/animated-button'
-import { Box, Download, Eye, Loader2 } from 'lucide-react'
+import { DeleteConfirmationModal } from '@/components/delete-confirmation-modal'
+import { Box, Download, Eye, Loader2, Trash2 } from 'lucide-react'
 
 interface ImageCardProps {
   image: {
@@ -17,6 +18,9 @@ interface ImageCardProps {
 
 export function ImageCard({ image }: ImageCardProps) {
   const [generating, setGenerating] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const handleGenerate3D = async () => {
@@ -43,11 +47,45 @@ export function ImageCard({ image }: ImageCardProps) {
 
       // Redirect to 3D models page
       window.location.href = '/models-3d'
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
       setGenerating(false)
     }
+  }
+
+  const handleDelete = async () => {
+    setDeleting(true)
+    setError(null)
+
+    try {
+      const response = await fetch('/api/delete-image', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ imageId: image.id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete image')
+      }
+
+      setDeleted(true)
+      setShowDeleteModal(false)
+      setTimeout(() => window.location.reload(), 500)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred')
+      setShowDeleteModal(false)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  if (deleted) {
+    return null
   }
 
   return (
@@ -98,6 +136,14 @@ export function ImageCard({ image }: ImageCardProps) {
             <Download className="h-4 w-4" />
           </AnimatedButton>
           <AnimatedButton
+            variant="outline"
+            size="sm"
+            onClick={() => setShowDeleteModal(true)}
+            disabled={deleting || generating}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </AnimatedButton>
+          <AnimatedButton
             size="sm"
             className="flex-1"
             onClick={handleGenerate3D}
@@ -113,10 +159,19 @@ export function ImageCard({ image }: ImageCardProps) {
                 <Box className="mr-2 h-4 w-4" />
                 Generate 3D
               </>
-            )}
-          </AnimatedButton>
-        </div>
+          )}
+        </AnimatedButton>
+      </div>
       </CardContent>
+
+      <DeleteConfirmationModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={handleDelete}
+        title="Delete Image?"
+        description="Are you sure you want to delete this image? This will also delete any 3D models generated from it. This action cannot be undone."
+        isDeleting={deleting}
+      />
     </Card>
   )
 }

@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AnimatedButton } from '@/components/animated-button'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Download, Eye, CheckCircle2, XCircle, Clock } from 'lucide-react'
+import { DeleteConfirmationModal } from '@/components/delete-confirmation-modal'
+import { Loader2, Download, Eye, CheckCircle2, XCircle, Clock, X } from 'lucide-react'
 import { ModelViewer } from './model-viewer'
 import Image from 'next/image'
 
@@ -35,6 +36,9 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
   const [model, setModel] = useState(initialModel)
   const [checking, setChecking] = useState(false)
   const [showViewer, setShowViewer] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleted, setDeleted] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   useEffect(() => {
     // Auto-check status if pending or in progress
@@ -81,6 +85,39 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
     }
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+
+    try {
+      const response = await fetch('/api/delete-3d-model', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ modelId: model.id }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete model')
+      }
+
+      setDeleted(true)
+      setShowDeleteModal(false)
+      setTimeout(() => window.location.reload(), 500)
+    } catch (err) {
+      console.error('Delete error:', err)
+      setShowDeleteModal(false)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  if (deleted) {
+    return null
+  }
+
   const getStatusBadge = () => {
     switch (model.status) {
       case 'SUCCEEDED':
@@ -115,9 +152,19 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
   }
 
   return (
-    <Card>
+    <Card className="relative">
+      {/* Delete Button - Top Right */}
+      <button
+        onClick={() => setShowDeleteModal(true)}
+        disabled={deleting}
+        className="absolute top-2 right-2 z-10 p-1 rounded-full bg-background/80 hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50"
+        title="Delete model"
+      >
+        <X className="h-4 w-4" />
+      </button>
+
       <CardHeader>
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between pr-8">
           <div className="space-y-1">
             <CardTitle className="text-lg">3D Model</CardTitle>
             {model.image?.prompt && (
@@ -259,6 +306,15 @@ export function ModelStatusCard({ model: initialModel }: ModelStatusCardProps) {
           )}
         </div>
       </CardContent>
+
+      <DeleteConfirmationModal
+        open={showDeleteModal}
+        onOpenChange={setShowDeleteModal}
+        onConfirm={handleDelete}
+        title="Delete 3D Model?"
+        description="Are you sure you want to delete this 3D model? This action cannot be undone."
+        isDeleting={deleting}
+      />
     </Card>
   )
 }

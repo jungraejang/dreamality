@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { UserNav } from "@/components/auth/user-nav";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NavTabs } from "@/components/nav-tabs";
 
 export const metadata: Metadata = {
   title: "Dreamality - AI Image Generation",
@@ -32,9 +33,12 @@ export default async function RootLayout({
                   Dreamality
                 </h1>
               </Link>
-              <div className="flex items-center gap-2 justify-between sm:justify-end">
-                <ThemeToggle />
-                <UserNav user={user} />
+              <div className="flex items-center gap-4 justify-between sm:justify-end flex-wrap">
+                {user && <NavTabs />}
+                <div className="flex items-center gap-2">
+                  <ThemeToggle />
+                  <UserNav user={user} />
+                </div>
               </div>
             </div>
           </header>
