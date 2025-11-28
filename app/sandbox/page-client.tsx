@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { SandboxScene } from '@/components/sandbox/sandbox-scene'
 import { ModelSelector } from '@/components/sandbox/model-selector'
+import { SessionManager } from '@/components/sandbox/session-manager'
 import { FadeIn } from '@/components/animations/fade-in'
+import { SandboxSession, PlacedModel as PlacedModelType } from '@/types/database.types'
 
 interface Model3D {
   id: string
@@ -32,15 +34,25 @@ interface PlacedModel {
 
 interface SandboxClientProps {
   models: Model3D[]
+  initialSessions: SandboxSession[]
 }
 
-export function SandboxClient({ models }: SandboxClientProps) {
+export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
   const [selectedModels, setSelectedModels] = useState<Set<string>>(new Set())
   const [placedModels, setPlacedModels] = useState<PlacedModel[]>([])
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate')
   const [uniformScale, setUniformScale] = useState(true)
   const instanceCounterRef = useRef(0)
+  
+  // Session management state
+  const [sessions, setSessions] = useState<SandboxSession[]>(initialSessions)
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null)
+  const [lastSavedState, setLastSavedState] = useState<string>('')
+  
+  // Track if there are unsaved changes
+  const currentState = JSON.stringify(placedModels)
+  const hasUnsavedChanges = currentState !== lastSavedState && placedModels.length > 0
 
   const handleToggleModel = useCallback((modelId: string) => {
     const model = models.find((m) => m.id === modelId)
@@ -89,7 +101,124 @@ export function SandboxClient({ models }: SandboxClientProps) {
   const handleResetSandbox = () => {
     setSelectedModels(new Set())
     setPlacedModels([])
+    setCurrentSessionId(null)
+    setLastSavedState('')
   }
+
+  // Session management functions
+  const refreshSessions = useCallback(async () => {
+    try {
+      const response = await fetch('/api/sandbox-sessions')
+      if (response.ok) {
+        const data = await response.json()
+        setSessions(data.sessions || [])
+      }
+    } catch (error) {
+      console.error('Failed to refresh sessions:', error)
+    }
+  }, [])
+
+  const handleSaveSession = useCallback(async (name: string, description: string) => {
+    if (!currentSessionId) {
+      // Create new session
+      return handleSaveAsSession(name, description)
+    }
+
+    // Convert placedModels to session format
+    const sessionModels: PlacedModelType[] = placedModels.map(pm => ({
+      id: pm.id,
+      modelId: pm.modelId,
+      glbUrl: pm.url,
+      name: models.find(m => m.id === pm.modelId)?.image?.prompt || 'Untitled Model',
+      position: pm.position,
+      rotation: pm.rotation,
+      scale: pm.scale
+    }))
+
+    const response = await fetch(`/api/sandbox-sessions/${currentSessionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, models: sessionModels })
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to save session')
+    }
+
+    setLastSavedState(JSON.stringify(placedModels))
+    await refreshSessions()
+  }, [currentSessionId, placedModels, models, refreshSessions])
+
+  const handleSaveAsSession = useCallback(async (name: string, description: string) => {
+    // Convert placedModels to session format
+    const sessionModels: PlacedModelType[] = placedModels.map(pm => ({
+      id: pm.id,
+      modelId: pm.modelId,
+      glbUrl: pm.url,
+      name: models.find(m => m.id === pm.modelId)?.image?.prompt || 'Untitled Model',
+      position: pm.position,
+      rotation: pm.rotation,
+      scale: pm.scale
+    }))
+
+    const response = await fetch('/api/sandbox-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, models: sessionModels })
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to create session')
+    }
+
+    const data = await response.json()
+    setCurrentSessionId(data.session.id)
+    setLastSavedState(JSON.stringify(placedModels))
+    await refreshSessions()
+  }, [placedModels, models, refreshSessions])
+
+  const handleLoadSession = useCallback((session: SandboxSession) => {
+    // Convert session models to placedModels format
+    const loadedModels: PlacedModel[] = (session.models || []).map((sm, index) => ({
+      id: `loaded-${instanceCounterRef.current++}`,
+      modelId: sm.modelId,
+      url: sm.glbUrl,
+      position: sm.position,
+      rotation: sm.rotation,
+      scale: sm.scale
+    }))
+
+    // Update selected models set
+    const modelIds = new Set(loadedModels.map(pm => pm.modelId))
+    setSelectedModels(modelIds)
+    setPlacedModels(loadedModels)
+    setCurrentSessionId(session.id)
+    setLastSavedState(JSON.stringify(loadedModels))
+    setSelectedModelId(null)
+  }, [])
+
+  const handleDeleteSession = useCallback(async (sessionId: string) => {
+    const response = await fetch(`/api/sandbox-sessions/${sessionId}`, {
+      method: 'DELETE'
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to delete session')
+    }
+
+    if (currentSessionId === sessionId) {
+      setCurrentSessionId(null)
+      setLastSavedState('')
+    }
+  }, [currentSessionId])
+
+  const handleNewSession = useCallback(() => {
+    setSelectedModels(new Set())
+    setPlacedModels([])
+    setCurrentSessionId(null)
+    setLastSavedState('')
+    setSelectedModelId(null)
+  }, [])
 
   const handleModelSelect = useCallback((instanceId: string | null) => {
     setSelectedModelId(instanceId)
@@ -217,8 +346,36 @@ export function SandboxClient({ models }: SandboxClientProps) {
           </div>
         </FadeIn>
 
-        {/* Stats */}
+        {/* Session Manager */}
         <FadeIn delay={0.1}>
+          <Card>
+            <CardHeader className="py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg">Session</CardTitle>
+                  <CardDescription className="text-sm">
+                    Save and load your sandbox arrangements
+                  </CardDescription>
+                </div>
+                <SessionManager
+                  sessions={sessions}
+                  currentSessionId={currentSessionId}
+                  hasUnsavedChanges={hasUnsavedChanges}
+                  placedModelsCount={placedModels.length}
+                  onSave={handleSaveSession}
+                  onSaveAs={handleSaveAsSession}
+                  onLoad={handleLoadSession}
+                  onDelete={handleDeleteSession}
+                  onNew={handleNewSession}
+                  onRefresh={refreshSessions}
+                />
+              </div>
+            </CardHeader>
+          </Card>
+        </FadeIn>
+
+        {/* Stats */}
+        <FadeIn delay={0.15}>
           <div className="flex gap-4 text-sm">
             <div className="px-4 py-2 bg-primary/10 rounded-lg">
               <span className="font-semibold">{placedModels.length}</span> models in sandbox

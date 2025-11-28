@@ -68,6 +68,58 @@ CREATE POLICY "Users can delete their own 3D models"
   FOR DELETE
   USING (auth.uid() = user_id);
 
+-- Create sandbox_sessions table
+CREATE TABLE IF NOT EXISTS sandbox_sessions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  models JSONB NOT NULL DEFAULT '[]'::jsonb,
+  thumbnail_url TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Enable Row Level Security for sandbox_sessions
+ALTER TABLE sandbox_sessions ENABLE ROW LEVEL SECURITY;
+
+-- Create policies for sandbox_sessions
+CREATE POLICY "Users can view their own sandbox sessions"
+  ON sandbox_sessions
+  FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own sandbox sessions"
+  ON sandbox_sessions
+  FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own sandbox sessions"
+  ON sandbox_sessions
+  FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own sandbox sessions"
+  ON sandbox_sessions
+  FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- Create function to update updated_at timestamp
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Create trigger to auto-update updated_at
+DROP TRIGGER IF EXISTS update_sandbox_sessions_updated_at ON sandbox_sessions;
+CREATE TRIGGER update_sandbox_sessions_updated_at
+  BEFORE UPDATE ON sandbox_sessions
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
 -- Create storage bucket for generated images
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('generated-images', 'generated-images', true)
