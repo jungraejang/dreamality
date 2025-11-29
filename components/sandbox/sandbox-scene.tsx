@@ -2,7 +2,7 @@
 
 import { Suspense, useRef, useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
+import { OrbitControls, Grid, useGLTF, TransformControls, Sky } from '@react-three/drei'
 import { XR, createXRStore, useXRInputSourceState, useXR, XROrigin } from '@react-three/xr'
 import { useFrame } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
@@ -415,60 +415,72 @@ function SceneContent({
   onModelDrag
 }: SandboxSceneProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const { session } = useXR()
 
   return (
     <>
-      {/* Sky background */}
-      <color attach="background" args={['#e0f2fe']} />
+      {/* Sky - use actual sky for VR, color for desktop */}
+      {session ? (
+        <Sky 
+          distance={450000} 
+          sunPosition={[100, 20, 100]} 
+          inclination={0.5}
+          azimuth={0.25}
+        />
+      ) : (
+        <color attach="background" args={['#e0f2fe']} />
+      )}
       
       {/* Lighting - brighter for better visibility */}
-      <ambientLight intensity={0.8} />
+      <ambientLight intensity={1.0} />
       <directionalLight
-        position={[10, 10, 5]}
-        intensity={1.2}
+        position={[10, 20, 10]}
+        intensity={1.5}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
       />
-      <pointLight position={[-10, 10, -10]} intensity={0.6} />
-      <hemisphereLight args={['#87ceeb', '#f0f0f0', 0.5]} />
+      <pointLight position={[-10, 10, -10]} intensity={0.8} />
+      <hemisphereLight args={['#87ceeb', '#f0f0f0', 0.7]} />
 
-      {/* Ground Grid - darker contrasting colors */}
+      {/* Ground Grid - larger for VR */}
       <Grid
-        args={[20, 20]}
+        args={[50, 50]}
         cellSize={1}
         cellThickness={0.6}
         cellColor="#475569"
         sectionSize={5}
         sectionThickness={1.5}
         sectionColor="#1e293b"
-        fadeDistance={30}
+        fadeDistance={50}
         fadeStrength={1}
         followCamera={false}
         infiniteGrid={false}
         position={[0, 0.01, 0]}
       />
       
-      {/* Ground plane - transparent with subtle color */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[50, 50]} />
+      {/* Ground plane - visible solid color for VR */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]} receiveShadow>
+        <planeGeometry args={[100, 100]} />
         <meshStandardMaterial 
-          color="#a5d8ff" 
-          transparent 
-          opacity={0.3} 
+          color="#7dd3fc" 
+          transparent={!session}
+          opacity={session ? 1 : 0.3} 
         />
       </mesh>
 
-      {/* Ground Plane - click to deselect */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, -0.01, 0]}
-        receiveShadow
-        onClick={() => onModelSelect(null)}
-      >
-        <planeGeometry args={[50, 50]} />
-        <shadowMaterial opacity={0.3} />
-      </mesh>
+      {/* Ground Plane - click to deselect (only for desktop) */}
+      {!session && (
+        <mesh
+          rotation={[-Math.PI / 2, 0, 0]}
+          position={[0, -0.01, 0]}
+          receiveShadow
+          onClick={() => onModelSelect(null)}
+        >
+          <planeGeometry args={[100, 100]} />
+          <shadowMaterial opacity={0.3} />
+        </mesh>
+      )}
 
       {/* Placed Models */}
       {placedModels.map((model) => (
@@ -487,16 +499,18 @@ function SceneContent({
         />
       ))}
 
-      {/* Camera Controls - disabled when transforming or dragging */}
-      <OrbitControls
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
-        minDistance={5}
-        maxDistance={50}
-        maxPolarAngle={Math.PI / 2}
-        enabled={!selectedModelId || (!isDragging && transformMode !== 'translate')}
-      />
+      {/* Camera Controls - disabled when transforming, dragging, or in VR */}
+      {!session && (
+        <OrbitControls
+          enablePan={true}
+          enableZoom={true}
+          enableRotate={true}
+          minDistance={5}
+          maxDistance={50}
+          maxPolarAngle={Math.PI / 2}
+          enabled={!selectedModelId || (!isDragging && transformMode !== 'translate')}
+        />
+      )}
     </>
   )
 }
@@ -544,8 +558,8 @@ export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
         >
           <XR store={xrStore}>
             <Suspense fallback={null}>
-              {/* XR Origin for VR positioning and locomotion */}
-              <XROrigin ref={xrOriginRef} position={[0, 0, 5]} />
+              {/* XR Origin for VR positioning and locomotion - start at ground level, 5m back */}
+              <XROrigin ref={xrOriginRef} position={[0, 0, 8]} />
               
               <SceneContent {...props} />
               <ScreenshotCapture onCapture={handleCaptureReady} />
