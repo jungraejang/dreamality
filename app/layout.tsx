@@ -52,6 +52,26 @@ export default async function RootLayout({
             </nav>
           )}
           <main className="bg-background min-h-screen">{children}</main>
+          <footer className="border-t bg-background py-8">
+            <div className="container mx-auto px-4">
+              <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex flex-col items-center md:items-start gap-1">
+                  <Link href="/">
+                    <span className="text-lg font-bold bg-gradient-to-r from-[#f95738] to-[#009dff] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">
+                      Dreamality
+                    </span>
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    Transform your ideas into printable 3D models with AI
+                  </p>
+                </div>
+                <div className="flex flex-col items-center md:items-end gap-1 text-sm text-muted-foreground">
+                  <p>© {new Date().getFullYear()} Coding Hwaesa. All rights reserved.</p>
+                  <p className="text-xs">Made with ❤️ for creators</p>
+                </div>
+              </div>
+            </div>
+          </footer>
         </EightBitProvider>
       </body>
     </html>

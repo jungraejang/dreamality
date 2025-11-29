@@ -9,12 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Input } from '@/components/ui/input'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Loader2, Sparkles, Box, ChevronDown, ChevronUp, Upload, AlertTriangle } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { FadeIn, FadeInStagger, FadeInItem } from '@/components/animations/fade-in'
 import { ScaleIn } from '@/components/animations/scale-in'
+import { motion } from 'framer-motion'
 
 export function ImageGenerator() {
   const [prompt, setPrompt] = useState('')
@@ -234,24 +234,42 @@ export function ImageGenerator() {
             </div>
 
             {/* NSFW Toggle */}
-            <div className="flex items-center space-x-2 p-3 border rounded-lg bg-amber-50 dark:bg-amber-950/20">
-              <Checkbox 
-                id="nsfw" 
-                checked={nsfw}
-                onCheckedChange={(checked) => setNsfw(checked as boolean)}
-              />
-              <div className="flex-1">
-                <Label 
-                  htmlFor="nsfw" 
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer flex items-center gap-2"
+            <div className="flex items-center gap-3">
+              <motion.button
+                type="button"
+                onClick={() => setNsfw(!nsfw)}
+                data-no-eight-bit
+                className="flex items-center gap-2 px-4 py-2 rounded-lg border-2"
+                style={nsfw 
+                  ? { backgroundColor: '#dc2626', borderColor: '#ef4444', color: '#ffffff' }
+                  : { backgroundColor: 'transparent', borderColor: '#52525b', color: '#a1a1aa' }
+                }
+                whileHover={{ 
+                  scale: 1.05,
+                  backgroundColor: nsfw ? '#b91c1c' : 'rgba(82, 82, 91, 0.2)',
+                  borderColor: nsfw ? '#f87171' : '#71717a'
+                }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+              >
+                <motion.div
+                  animate={nsfw ? { rotate: [0, -10, 10, -10, 0] } : {}}
+                  transition={{ duration: 0.5 }}
                 >
-                  <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                  NSFW Content (18+)
-                </Label>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Enable for mature/adult content generation
-                </p>
-              </div>
+                  <AlertTriangle className="h-4 w-4" />
+                </motion.div>
+                <span className="text-sm font-medium">NSFW (18+)</span>
+              </motion.button>
+              {nsfw && (
+                <motion.span 
+                  className="text-xs text-red-400"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                >
+                  Mature content enabled
+                </motion.span>
+              )}
             </div>
 
             {/* Advanced Options Toggle */}
