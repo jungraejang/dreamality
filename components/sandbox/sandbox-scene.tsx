@@ -313,10 +313,26 @@ function VRManager() {
       
       const axes = source.gamepad.axes
       
+      // Helper to get joystick values checking both standard mappings
+      // Some browsers/controllers map thumbstick to 2/3, others to 0/1
+      const getJoystickAxes = (axes: readonly number[]) => {
+        let x = 0, y = 0
+        // Try axes 2/3 (Standard for Quest thumbstick)
+        if (axes.length >= 4) {
+          x = axes[2]
+          y = axes[3]
+        }
+        // If 2/3 are zero/undefined, try 0/1 (Fallback)
+        if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1 && axes.length >= 2) {
+          x = axes[0]
+          y = axes[1]
+        }
+        return { x, y }
+      }
+      
       // Left Hand - Movement
-      if (source.handedness === 'left' && axes.length >= 4) {
-        const x = axes[2]
-        const z = axes[3]
+      if (source.handedness === 'left') {
+        const { x, y: z } = getJoystickAxes(axes)
         
         if (Math.abs(x) > 0.1 || Math.abs(z) > 0.1) {
           const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
@@ -335,11 +351,23 @@ function VRManager() {
         }
       }
       
-      // Right Hand - Rotation
-      if (source.handedness === 'right' && axes.length >= 4) {
-        const x = axes[2]
+      // Right Hand - Rotation & Movement (Forward/Back)
+      if (source.handedness === 'right') {
+        const { x, y } = getJoystickAxes(axes)
+        
+        // Rotation (X-axis)
         if (Math.abs(x) > 0.1) {
           originRef.current.rotation.y -= x * rotateSpeed
+        }
+        
+        // Movement (Y-axis) - Allow moving forward/back with right stick
+        if (Math.abs(y) > 0.1) {
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+          forward.y = 0
+          forward.normalize()
+          
+          // -y because joystick up is usually negative
+          originRef.current.position.addScaledVector(forward, -y * speed)
         }
       }
     }
