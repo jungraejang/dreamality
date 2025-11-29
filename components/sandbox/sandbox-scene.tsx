@@ -301,8 +301,9 @@ function VRManager() {
   const { session } = useXR()
   const originRef = useRef<THREE.Group>(null)
   const markerRef = useRef<THREE.Group>(null)
-  const { gl } = useThree()
-  // Track snap turn state to require return-to-center
+  const { gl, camera } = useThree()
+  
+  // State for snap turn (to prevent continuous spinning)
   const snapState = useRef<{ [key: string]: boolean }>({})
   // Track teleport state
   const teleportState = useRef<{ active: boolean, valid: boolean, position: THREE.Vector3 }>({ 
@@ -314,7 +315,7 @@ function VRManager() {
   useFrame((state, delta, frame) => {
     if (!session || !originRef.current) return
     
-    const snapAngle = Math.PI / 2 // 90 degrees
+    const snapAngle = Math.PI / 4 // 45 degrees
     
     // Reset marker visibility at start of frame
     if (markerRef.current) {
@@ -340,8 +341,8 @@ function VRManager() {
       const wasStickActive = snapState.current[hand] || false
       
       if (isStickActive && !wasStickActive) {
-        // Turn 90 degrees
-        const direction = stickX > 0 ? -1 : 1 // Right = -90deg (Clockwise)
+        // Turn 45 degrees
+        const direction = stickX > 0 ? -1 : 1 // Right = -45deg (Clockwise)
         originRef.current.rotation.y += direction * snapAngle
       }
       snapState.current[hand] = isStickActive
@@ -352,7 +353,6 @@ function VRManager() {
         isAnyTriggerPressed = true
         
         // Get controller pose to cast ray
-        // frame is passed as 3rd arg to useFrame
         const referenceSpace = gl.xr.getReferenceSpace()
         
         if (frame && referenceSpace && source.targetRaySpace) {
