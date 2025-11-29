@@ -74,7 +74,7 @@ export function NavTabs() {
               >
                 <Icon className="h-4 w-4" />
               </motion.div>
-              <span>{tab.name}</span>
+              <span className="hidden sm:inline">{tab.name}</span>
             </motion.div>
           </Link>
         )

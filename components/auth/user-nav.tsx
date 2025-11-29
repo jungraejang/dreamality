@@ -43,8 +43,8 @@ export function UserNav({ user }: { user: User | null }) {
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="flex items-center gap-2">
           <UserIcon className="h-4 w-4" />
-          <span className="text-sm max-w-[150px] truncate">{user.email}</span>
-          <ChevronDown className="h-4 w-4" />
+          <span className="hidden sm:inline text-sm max-w-[150px] truncate">{user.email}</span>
+          <ChevronDown className="h-4 w-4 hidden sm:inline" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
