@@ -3,8 +3,6 @@ import "./globals.css";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { UserNav } from "@/components/auth/user-nav";
-import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { NavTabs } from "@/components/nav-tabs";
 
 export const metadata: Metadata = {
@@ -23,27 +21,26 @@ export default async function RootLayout({
   } = await supabase.auth.getUser();
 
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark">
       <body>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-          <header className="border-b bg-background">
-            <div className="container mx-auto px-4 py-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <Link href="/">
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#f95738] to-[#009dff] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">
-                  Dreamality
-                </h1>
-              </Link>
-              <div className="flex items-center gap-4 justify-between sm:justify-end flex-wrap">
-                {user && <NavTabs />}
-                <div className="flex items-center gap-2">
-                  <ThemeToggle />
-                  <UserNav user={user} />
-                </div>
-              </div>
+        <header className="border-b bg-background">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <Link href="/">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-[#f95738] to-[#009dff] bg-clip-text text-transparent hover:opacity-80 transition-opacity cursor-pointer">
+                Dreamality
+              </h1>
+            </Link>
+            <UserNav user={user} />
+          </div>
+        </header>
+        {user && (
+          <nav className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
+            <div className="container mx-auto px-4 py-2 flex justify-center">
+              <NavTabs />
             </div>
-          </header>
-          <main className="bg-background min-h-screen">{children}</main>
-        </ThemeProvider>
+          </nav>
+        )}
+        <main className="bg-background min-h-screen">{children}</main>
       </body>
     </html>
   );

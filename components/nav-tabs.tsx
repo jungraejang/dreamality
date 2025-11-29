@@ -30,7 +30,7 @@ export function NavTabs() {
   ]
 
   return (
-    <nav className="flex gap-1 bg-gray-200 dark:bg-gray-800 p-1 rounded-lg">
+    <nav className="flex gap-1 bg-gray-800 p-1 rounded-lg">
       {tabs.map((tab) => {
         const Icon = tab.icon
         return (
@@ -40,12 +40,12 @@ export function NavTabs() {
             className={cn(
               'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
               tab.active
-                ? 'bg-white dark:bg-[#083d77] text-[#083d77] dark:text-white shadow-sm'
-                : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
+                ? 'bg-[#083d77] text-white shadow-sm'
+                : 'text-gray-400 hover:text-gray-100'
             )}
           >
             <Icon className="h-4 w-4" />
-            <span className="hidden sm:inline">{tab.name}</span>
+            <span>{tab.name}</span>
           </Link>
         )
       })}
