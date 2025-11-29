@@ -1,9 +1,9 @@
 'use client'
 
 import { Suspense, useRef, useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
-import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
-import { XR, createXRStore } from '@react-three/xr'
+import { Canvas, useThree, ThreeEvent, useFrame } from '@react-three/fiber'
+import { OrbitControls, Grid, useGLTF, TransformControls, Text } from '@react-three/drei'
+import { XR, createXRStore, useXR, XROrigin } from '@react-three/xr'
 import * as THREE from 'three'
 
 // Create XR store for VR session management
@@ -247,13 +247,8 @@ function ScreenshotCapture({ onCapture }: { onCapture: (fn: () => void) => void 
   
   useEffect(() => {
     const captureScreenshot = () => {
-      // Render the scene
       gl.render(scene, camera)
-      
-      // Get the canvas data as a data URL
       const dataUrl = gl.domElement.toDataURL('image/png')
-      
-      // Create a download link
       const link = document.createElement('a')
       link.href = dataUrl
       link.download = `sandbox-screenshot-${Date.now()}.png`
@@ -261,11 +256,103 @@ function ScreenshotCapture({ onCapture }: { onCapture: (fn: () => void) => void 
       link.click()
       document.body.removeChild(link)
     }
-    
     onCapture(captureScreenshot)
   }, [gl, scene, camera, onCapture])
   
   return null
+}
+
+function ExitButton() {
+  const { session } = useXR()
+  const { camera } = useThree()
+  const ref = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
+  
+  useFrame(() => {
+    if (!ref.current) return
+    const p = camera.position
+    const q = camera.quaternion
+    // Place 1.5m in front, 0.3m down relative to camera look direction
+    const forward = new THREE.Vector3(0, 0, -1.5).applyQuaternion(q)
+    ref.current.position.copy(p).add(forward).add(new THREE.Vector3(0, -0.3, 0))
+    ref.current.lookAt(p)
+  })
+
+  if (!session) return null
+
+  return (
+    <group ref={ref}>
+      <mesh 
+        onClick={() => session.end()}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <planeGeometry args={[0.4, 0.15]} />
+        <meshBasicMaterial color={hovered ? "#dc2626" : "#991b1b"} opacity={0.8} transparent />
+        <Text position={[0, 0, 0.01]} fontSize={0.05} color="white" anchorX="center" anchorY="middle">
+          EXIT VR
+        </Text>
+      </mesh>
+    </group>
+  )
+}
+
+function VRManager() {
+  const { session } = useXR()
+  const originRef = useRef<THREE.Group>(null)
+  const { camera } = useThree()
+  
+  useFrame((state, delta) => {
+    if (!session || !originRef.current) return
+    
+    const speed = 3.0 * delta
+    const rotateSpeed = 2.0 * delta
+    
+    for (const source of session.inputSources) {
+      if (!source.gamepad) continue
+      
+      const axes = source.gamepad.axes
+      
+      // Left Hand - Movement
+      if (source.handedness === 'left' && axes.length >= 4) {
+        const x = axes[2]
+        const z = axes[3]
+        
+        if (Math.abs(x) > 0.1 || Math.abs(z) > 0.1) {
+          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+          forward.y = 0
+          forward.normalize()
+          
+          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion)
+          right.y = 0
+          right.normalize()
+          
+          const moveVec = new THREE.Vector3()
+          moveVec.addScaledVector(right, x * speed)
+          moveVec.addScaledVector(forward, -z * speed)
+          
+          originRef.current.position.add(moveVec)
+        }
+      }
+      
+      // Right Hand - Rotation
+      if (source.handedness === 'right' && axes.length >= 4) {
+        const x = axes[2]
+        if (Math.abs(x) > 0.1) {
+          originRef.current.rotation.y -= x * rotateSpeed
+        }
+      }
+    }
+  })
+
+  if (!session) return null
+
+  return (
+    <>
+      <XROrigin ref={originRef} position={[0, 0, 5]} />
+      <ExitButton />
+    </>
+  )
 }
 
 function SceneContent({ 
@@ -277,9 +364,12 @@ function SceneContent({
   onModelDrag
 }: SandboxSceneProps) {
   const [isDragging, setIsDragging] = useState(false)
+  const { session } = useXR()
 
   return (
     <>
+      <VRManager />
+
       {/* Sky background */}
       <color attach="background" args={['#e0f2fe']} />
       
@@ -349,16 +439,18 @@ function SceneContent({
         />
       ))}
 
-      {/* Camera Controls - disabled when transforming or dragging */}
-      <OrbitControls
-        enablePan={true}
-        enableZoom={true}
-        enableRotate={true}
-        minDistance={5}
-        maxDistance={50}
-        maxPolarAngle={Math.PI / 2}
-        enabled={!selectedModelId || (!isDragging && transformMode !== 'translate')}
-      />
+      {/* Camera Controls - disabled when transforming or dragging, OR in VR */}
+      {!session && (
+        <OrbitControls
+          enablePan={true}
+          enableZoom={true}
+          enableRotate={true}
+          minDistance={5}
+          maxDistance={50}
+          maxPolarAngle={Math.PI / 2}
+          enabled={!selectedModelId || (!isDragging && transformMode !== 'translate')}
+        />
+      )}
     </>
   )
 }
