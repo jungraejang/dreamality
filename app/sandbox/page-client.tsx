@@ -4,11 +4,11 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2 } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
-import { SandboxScene } from '@/components/sandbox/sandbox-scene'
+import { SandboxScene, SandboxSceneHandle } from '@/components/sandbox/sandbox-scene'
 import { ModelSelector } from '@/components/sandbox/model-selector'
 import { SessionManager } from '@/components/sandbox/session-manager'
 import { FadeIn } from '@/components/animations/fade-in'
@@ -44,6 +44,11 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate')
   const [uniformScale, setUniformScale] = useState(true)
   const instanceCounterRef = useRef(0)
+  const sandboxSceneRef = useRef<SandboxSceneHandle>(null)
+
+  const handleScreenshot = useCallback(() => {
+    sandboxSceneRef.current?.takeScreenshot()
+  }, [])
   
   // Session management state
   const [sessions, setSessions] = useState<SandboxSession[]>(initialSessions)
@@ -412,6 +417,7 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                 {/* 3D Viewer with Overlay Controls */}
                 <div className="relative">
                   <SandboxScene
+                    ref={sandboxSceneRef}
                     placedModels={placedModels}
                     selectedModelId={selectedModelId}
                     transformMode={transformMode}
@@ -450,6 +456,16 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                       >
                         <Maximize2 className="h-4 w-4 mr-2" />
                         Scale
+                      </AnimatedButton>
+                      <div className="border-t my-1" />
+                      <AnimatedButton
+                        size="sm"
+                        variant="outline"
+                        onClick={handleScreenshot}
+                        className="w-full justify-start"
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        Screenshot
                       </AnimatedButton>
                       {selectedModelId && (
                         <>

@@ -1,9 +1,13 @@
 'use client'
 
-import { Suspense, useRef, useState, useEffect, useMemo, useCallback } from 'react'
+import { Suspense, useRef, useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
+
+export interface SandboxSceneHandle {
+  takeScreenshot: () => void
+}
 
 interface PlacedModel {
   id: string
@@ -232,6 +236,33 @@ interface SandboxSceneProps {
   onModelDrag: (id: string, position: [number, number, number]) => void
 }
 
+// Component to capture screenshot from inside the Canvas
+function ScreenshotCapture({ onCapture }: { onCapture: (fn: () => void) => void }) {
+  const { gl, scene, camera } = useThree()
+  
+  useEffect(() => {
+    const captureScreenshot = () => {
+      // Render the scene
+      gl.render(scene, camera)
+      
+      // Get the canvas data as a data URL
+      const dataUrl = gl.domElement.toDataURL('image/png')
+      
+      // Create a download link
+      const link = document.createElement('a')
+      link.href = dataUrl
+      link.download = `sandbox-screenshot-${Date.now()}.png`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    }
+    
+    onCapture(captureScreenshot)
+  }, [gl, scene, camera, onCapture])
+  
+  return null
+}
+
 function SceneContent({ 
   placedModels, 
   selectedModelId, 
@@ -327,18 +358,36 @@ function SceneContent({
   )
 }
 
-export function SandboxScene(props: SandboxSceneProps) {
-  return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden border bg-linear-to-b from-sky-100 to-sky-200 dark:from-slate-300 dark:to-slate-400">
-      <Canvas
-        camera={{ position: [10, 10, 10], fov: 50 }}
-        shadows
-      >
-        <Suspense fallback={null}>
-          <SceneContent {...props} />
-        </Suspense>
-      </Canvas>
-    </div>
-  )
-}
+export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
+  function SandboxScene(props, ref) {
+    const screenshotFnRef = useRef<(() => void) | null>(null)
+    
+    useImperativeHandle(ref, () => ({
+      takeScreenshot: () => {
+        if (screenshotFnRef.current) {
+          screenshotFnRef.current()
+        }
+      }
+    }))
+    
+    const handleCaptureReady = useCallback((fn: () => void) => {
+      screenshotFnRef.current = fn
+    }, [])
+    
+    return (
+      <div className="w-full h-[600px] rounded-lg overflow-hidden border bg-linear-to-b from-sky-100 to-sky-200 dark:from-slate-300 dark:to-slate-400">
+        <Canvas
+          camera={{ position: [10, 10, 10], fov: 50 }}
+          shadows
+          gl={{ preserveDrawingBuffer: true }}
+        >
+          <Suspense fallback={null}>
+            <SceneContent {...props} />
+            <ScreenshotCapture onCapture={handleCaptureReady} />
+          </Suspense>
+        </Canvas>
+      </div>
+    )
+  }
+)
 
