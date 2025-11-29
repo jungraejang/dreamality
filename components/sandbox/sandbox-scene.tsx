@@ -301,74 +301,51 @@ function VRManager() {
   const { session } = useXR()
   const originRef = useRef<THREE.Group>(null)
   const { camera } = useThree()
+  // Track snap turn state to require return-to-center
+  const snapState = useRef<{ [key: string]: boolean }>({})
   
   useFrame((state, delta) => {
     if (!session || !originRef.current) return
     
-    const speed = 3.0 * delta
-    const rotateSpeed = 2.0 * delta
+    const moveSpeed = 3.0 * delta
+    const snapAngle = Math.PI / 2 // 90 degrees
     
     for (const source of session.inputSources) {
       if (!source.gamepad) continue
       
       const axes = source.gamepad.axes
+      const buttons = source.gamepad.buttons
+      const hand = source.handedness
       
-      // Helper to get joystick values checking both standard mappings
-      // Some browsers/controllers map thumbstick to 2/3, others to 0/1
-      const getJoystickAxes = (axes: readonly number[]) => {
-        let x = 0, y = 0
-        // Try axes 2/3 (Standard for Quest thumbstick)
-        if (axes.length >= 4) {
-          x = axes[2]
-          y = axes[3]
-        }
-        // If 2/3 are zero/undefined, try 0/1 (Fallback)
-        if (Math.abs(x) < 0.1 && Math.abs(y) < 0.1 && axes.length >= 2) {
-          x = axes[0]
-          y = axes[1]
-        }
-        return { x, y }
+      // --- Joystick Turning ---
+      let stickX = 0
+      // Check axes 2 (Standard) or 0 (Fallback)
+      if (axes.length >= 4 && Math.abs(axes[2]) > 0.1) stickX = axes[2]
+      else if (axes.length >= 2 && Math.abs(axes[0]) > 0.1) stickX = axes[0]
+      
+      const threshold = 0.5
+      const isStickActive = Math.abs(stickX) > threshold
+      const wasStickActive = snapState.current[hand] || false
+      
+      if (isStickActive && !wasStickActive) {
+        // Turn 90 degrees
+        const direction = stickX > 0 ? -1 : 1 // Right = -90deg (Clockwise)
+        originRef.current.rotation.y += direction * snapAngle
       }
       
-      // Left Hand - Movement
-      if (source.handedness === 'left') {
-        const { x, y: z } = getJoystickAxes(axes)
-        
-        if (Math.abs(x) > 0.1 || Math.abs(z) > 0.1) {
-          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
-          forward.y = 0
-          forward.normalize()
-          
-          const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion)
-          right.y = 0
-          right.normalize()
-          
-          const moveVec = new THREE.Vector3()
-          moveVec.addScaledVector(right, x * speed)
-          moveVec.addScaledVector(forward, -z * speed)
-          
-          originRef.current.position.add(moveVec)
-        }
-      }
+      // Update snap state
+      snapState.current[hand] = isStickActive
       
-      // Right Hand - Rotation & Movement (Forward/Back)
-      if (source.handedness === 'right') {
-        const { x, y } = getJoystickAxes(axes)
+      // --- Trigger Movement ---
+      const trigger = buttons[0]
+      if (trigger && trigger.pressed) {
+        // Move in Look Direction
+        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
+        forward.y = 0
+        forward.normalize()
         
-        // Rotation (X-axis)
-        if (Math.abs(x) > 0.1) {
-          originRef.current.rotation.y -= x * rotateSpeed
-        }
-        
-        // Movement (Y-axis) - Allow moving forward/back with right stick
-        if (Math.abs(y) > 0.1) {
-          const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
-          forward.y = 0
-          forward.normalize()
-          
-          // -y because joystick up is usually negative
-          originRef.current.position.addScaledVector(forward, -y * speed)
-        }
+        // Analog speed control based on trigger pressure
+        originRef.current.position.addScaledVector(forward, moveSpeed * trigger.value)
       }
     }
   })
