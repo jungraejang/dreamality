@@ -301,7 +301,18 @@ function VRManager() {
   const { session } = useXR()
   const originRef = useRef<THREE.Group>(null)
   const markerRef = useRef<THREE.Group>(null)
+  const rayRef = useRef<THREE.Line>(null)
   const { gl, camera } = useThree()
+  
+  // Use a Three.js Line object wrapped in primitive to avoid SVG conflict
+  const rayLine = useMemo(() => {
+    const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(0,0,-1)])
+    const material = new THREE.LineBasicMaterial({ color: 0x00ff00, linewidth: 2 })
+    const line = new THREE.Line(geometry, material)
+    line.visible = false
+    line.frustumCulled = false
+    return line
+  }, [])
   
   // State for snap turn (to prevent continuous spinning)
   const snapState = useRef<{ [key: string]: boolean }>({})
@@ -317,10 +328,10 @@ function VRManager() {
     
     const snapAngle = Math.PI / 4 // 45 degrees
     
-    // Reset marker visibility at start of frame
-    if (markerRef.current) {
-      markerRef.current.visible = false
-    }
+    // Reset visibility
+    if (markerRef.current) markerRef.current.visible = false
+    if (rayRef.current) rayRef.current.visible = false
+    
     let isAnyTriggerPressed = false
     
     for (const source of session.inputSources) {
@@ -363,25 +374,44 @@ function VRManager() {
             const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(orientation)
             
             // Raycast to ground (y=0)
-            // Ray: P + t*D. Find t where y=0.
-            // 0 = Py + t*Dy => t = -Py / Dy
-            if (direction.y < -0.1) { // Must be pointing somewhat down
-              const t = -position.y / direction.y
-              if (t > 0 && t < 30) { // Max distance 30m
-                const target = new THREE.Vector3().copy(position).add(direction.multiplyScalar(t))
-                
-                // Update marker
-                if (markerRef.current) {
-                  markerRef.current.visible = true
-                  markerRef.current.position.copy(target)
-                }
-                
-                teleportState.current.active = true
-                teleportState.current.valid = true
-                teleportState.current.position.copy(target)
-              } else {
-                teleportState.current.valid = false
-              }
+            // Ray: P + t*D. Find t where y=0 => t = -Py / Dy
+            let t = 0
+            const target = new THREE.Vector3()
+            let isValid = false
+            
+            if (direction.y < 0) { // Pointing down
+               t = -position.y / direction.y
+               if (t > 0 && t < 50) { // Max distance 50m
+                 target.copy(position).add(direction.clone().multiplyScalar(t))
+                 isValid = true
+               }
+            }
+            
+            if (!isValid) {
+               // Extend ray forward 10m if invalid
+               target.copy(position).add(direction.clone().multiplyScalar(10))
+            }
+            
+            // Update Visual Ray
+            if (rayRef.current) {
+              rayRef.current.visible = true
+              const positions = new Float32Array([
+                position.x, position.y, position.z,
+                target.x, target.y, target.z
+              ])
+              rayRef.current.geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+              // Color: Green if valid, Red if invalid
+              ;(rayRef.current.material as THREE.LineBasicMaterial).color.set(isValid ? 0x00ff00 : 0xff0000)
+            }
+            
+            // Update Marker
+            if (isValid && markerRef.current) {
+              markerRef.current.visible = true
+              markerRef.current.position.copy(target)
+              
+              teleportState.current.active = true
+              teleportState.current.valid = true
+              teleportState.current.position.copy(target)
             } else {
               teleportState.current.valid = false
             }
@@ -412,6 +442,10 @@ function VRManager() {
     <>
       <XROrigin ref={originRef} position={[0, 0, 5]} />
       <ExitButton />
+      
+      {/* Visual Ray - using primitive to avoid SVG conflict */}
+      <primitive object={rayLine} ref={rayRef} />
+      
       {/* Teleport Marker */}
       <group ref={markerRef} visible={false}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
