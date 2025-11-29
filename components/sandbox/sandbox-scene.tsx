@@ -3,7 +3,9 @@
 import { Suspense, useRef, useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
-import { XR, createXRStore } from '@react-three/xr'
+import { XR, createXRStore, useXRInputSourceState, useXR, XROrigin } from '@react-three/xr'
+import { useFrame } from '@react-three/fiber'
+import { Text } from '@react-three/drei'
 import * as THREE from 'three'
 
 // Create XR store for VR session management
@@ -241,6 +243,142 @@ interface SandboxSceneProps {
   onModelDrag: (id: string, position: [number, number, number]) => void
 }
 
+// VR Locomotion - allows user to move using controller thumbstick
+function VRLocomotion({ originRef }: { originRef: React.RefObject<THREE.Group> }) {
+  const leftController = useXRInputSourceState('controller', 'left')
+  const rightController = useXRInputSourceState('controller', 'right')
+  const { camera } = useThree()
+  
+  useFrame((_, delta) => {
+    if (!originRef.current) return
+    
+    let moveX = 0
+    let moveZ = 0
+    let rotateY = 0
+    
+    // Left thumbstick for movement (xr-standard-thumbstick)
+    if (leftController?.gamepad) {
+      const thumbstick = leftController.gamepad['xr-standard-thumbstick']
+      if (thumbstick) {
+        moveX = thumbstick.xAxis || 0
+        moveZ = thumbstick.yAxis || 0
+      }
+    }
+    
+    // Right thumbstick for rotation
+    if (rightController?.gamepad) {
+      const thumbstick = rightController.gamepad['xr-standard-thumbstick']
+      if (thumbstick) {
+        rotateY = thumbstick.xAxis || 0
+      }
+    }
+    
+    // Apply deadzone
+    const deadzone = 0.15
+    if (Math.abs(moveX) < deadzone) moveX = 0
+    if (Math.abs(moveZ) < deadzone) moveZ = 0
+    if (Math.abs(rotateY) < deadzone) rotateY = 0
+    
+    // Movement speed
+    const moveSpeed = 5 * delta
+    const rotateSpeed = 1.5 * delta
+    
+    // Get camera direction for movement
+    const cameraDirection = new THREE.Vector3()
+    camera.getWorldDirection(cameraDirection)
+    cameraDirection.y = 0
+    cameraDirection.normalize()
+    
+    // Get right direction
+    const rightDirection = new THREE.Vector3()
+    rightDirection.crossVectors(new THREE.Vector3(0, 1, 0), cameraDirection).normalize()
+    
+    // Apply movement
+    if (moveX !== 0 || moveZ !== 0) {
+      originRef.current.position.add(
+        rightDirection.clone().multiplyScalar(-moveX * moveSpeed)
+      )
+      originRef.current.position.add(
+        cameraDirection.clone().multiplyScalar(-moveZ * moveSpeed)
+      )
+    }
+    
+    // Apply rotation
+    if (rotateY !== 0) {
+      originRef.current.rotation.y -= rotateY * rotateSpeed
+    }
+  })
+  
+  return null
+}
+
+// VR Exit Button - floating button user can click to exit VR
+function VRExitButton() {
+  const { session } = useXR()
+  const [hovered, setHovered] = useState(false)
+  const { camera } = useThree()
+  const buttonRef = useRef<THREE.Group>(null)
+  
+  // Position button in front of user
+  useFrame(() => {
+    if (!buttonRef.current || !session) return
+    
+    // Get camera position and direction
+    const cameraPos = camera.position.clone()
+    const cameraDir = new THREE.Vector3()
+    camera.getWorldDirection(cameraDir)
+    
+    // Position button 2 meters in front and slightly down
+    const buttonPos = cameraPos.clone().add(cameraDir.multiplyScalar(2))
+    buttonPos.y = cameraPos.y - 0.3
+    
+    buttonRef.current.position.copy(buttonPos)
+    buttonRef.current.lookAt(cameraPos)
+  })
+  
+  const handleExitVR = () => {
+    if (session) {
+      session.end()
+    }
+  }
+  
+  if (!session) return null
+  
+  return (
+    <group ref={buttonRef}>
+      {/* Exit button background */}
+      <mesh
+        onClick={handleExitVR}
+        onPointerOver={() => setHovered(true)}
+        onPointerOut={() => setHovered(false)}
+      >
+        <planeGeometry args={[0.4, 0.15]} />
+        <meshBasicMaterial 
+          color={hovered ? '#ef4444' : '#dc2626'} 
+          transparent 
+          opacity={0.9} 
+        />
+      </mesh>
+      {/* Exit text */}
+      <Text
+        position={[0, 0, 0.01]}
+        fontSize={0.05}
+        color="white"
+        anchorX="center"
+        anchorY="middle"
+        font="/fonts/inter-bold.woff"
+      >
+        EXIT VR
+      </Text>
+      {/* Border */}
+      <mesh position={[0, 0, -0.001]}>
+        <planeGeometry args={[0.42, 0.17]} />
+        <meshBasicMaterial color="white" />
+      </mesh>
+    </group>
+  )
+}
+
 // Component to capture screenshot from inside the Canvas
 function ScreenshotCapture({ onCapture }: { onCapture: (fn: () => void) => void }) {
   const { gl, scene, camera } = useThree()
@@ -363,9 +501,24 @@ function SceneContent({
   )
 }
 
+// VR Content wrapper with locomotion
+function VRContent({ props, originRef }: { props: SandboxSceneProps, originRef: React.RefObject<THREE.Group> }) {
+  const { session } = useXR()
+  
+  if (!session) return null
+  
+  return (
+    <>
+      <VRLocomotion originRef={originRef} />
+      <VRExitButton />
+    </>
+  )
+}
+
 export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
   function SandboxScene(props, ref) {
     const screenshotFnRef = useRef<(() => void) | null>(null)
+    const xrOriginRef = useRef<THREE.Group>(null!)
     
     useImperativeHandle(ref, () => ({
       takeScreenshot: () => {
@@ -391,8 +544,14 @@ export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
         >
           <XR store={xrStore}>
             <Suspense fallback={null}>
+              {/* XR Origin for VR positioning and locomotion */}
+              <XROrigin ref={xrOriginRef} position={[0, 0, 5]} />
+              
               <SceneContent {...props} />
               <ScreenshotCapture onCapture={handleCaptureReady} />
+              
+              {/* VR-specific components */}
+              <VRContent props={props} originRef={xrOriginRef} />
             </Suspense>
           </XR>
         </Canvas>
