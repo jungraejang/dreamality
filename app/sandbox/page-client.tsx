@@ -430,7 +430,7 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                   {/* Transform Controls Overlay - Top Right */}
                   <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
                     {/* Tool Buttons */}
-                    <div className="flex flex-col gap-1 p-2 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-lg shadow-lg border">
+                    <div className="flex flex-col gap-1 p-2 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
                       <AnimatedButton
                         size="sm"
                         variant={transformMode === 'translate' ? 'default' : 'outline'}
@@ -486,7 +486,7 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
 
                     {/* Transform Values Panel - Only show when model selected */}
                     {selectedModelId && selectedModel && (
-                      <div className="p-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-sm rounded-lg shadow-lg border w-48">
+                      <div className="p-3 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 w-48">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium">
                             {transformMode === 'translate' ? 'Position' : transformMode === 'rotate' ? 'Rotation' : 'Scale'}
