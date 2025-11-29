@@ -368,10 +368,15 @@ function VRManager() {
         
         if (frame && referenceSpace && source.targetRaySpace) {
           const pose = frame.getPose(source.targetRaySpace, referenceSpace)
-          if (pose) {
+          if (pose && originRef.current) {
+            originRef.current.updateMatrixWorld() // Ensure matrix is up to date
+            
             const position = new THREE.Vector3(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z)
+            position.applyMatrix4(originRef.current.matrixWorld) // Convert to World Space
+            
             const orientation = new THREE.Quaternion(pose.transform.orientation.x, pose.transform.orientation.y, pose.transform.orientation.z, pose.transform.orientation.w)
             const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(orientation)
+            direction.transformDirection(originRef.current.matrixWorld) // Convert to World Direction
             
             // Raycast to ground (y=0)
             // Ray: P + t*D. Find t where y=0 => t = -Py / Dy
