@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useCallback, useEffect } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -118,6 +118,34 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
     }
   }, [])
 
+  const handleSaveAsSession = useCallback(async (name: string, description: string) => {
+    // Convert placedModels to session format
+    const sessionModels: PlacedModelType[] = placedModels.map(pm => ({
+      id: pm.id,
+      modelId: pm.modelId,
+      glbUrl: pm.url,
+      name: models.find(m => m.id === pm.modelId)?.image?.prompt || 'Untitled Model',
+      position: pm.position,
+      rotation: pm.rotation,
+      scale: pm.scale
+    }))
+
+    const response = await fetch('/api/sandbox-sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, description, models: sessionModels })
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to create session')
+    }
+
+    const data = await response.json()
+    setCurrentSessionId(data.session.id)
+    setLastSavedState(JSON.stringify(placedModels))
+    await refreshSessions()
+  }, [placedModels, models, refreshSessions])
+
   const handleSaveSession = useCallback(async (name: string, description: string) => {
     if (!currentSessionId) {
       // Create new session
@@ -147,39 +175,11 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
 
     setLastSavedState(JSON.stringify(placedModels))
     await refreshSessions()
-  }, [currentSessionId, placedModels, models, refreshSessions])
-
-  const handleSaveAsSession = useCallback(async (name: string, description: string) => {
-    // Convert placedModels to session format
-    const sessionModels: PlacedModelType[] = placedModels.map(pm => ({
-      id: pm.id,
-      modelId: pm.modelId,
-      glbUrl: pm.url,
-      name: models.find(m => m.id === pm.modelId)?.image?.prompt || 'Untitled Model',
-      position: pm.position,
-      rotation: pm.rotation,
-      scale: pm.scale
-    }))
-
-    const response = await fetch('/api/sandbox-sessions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, models: sessionModels })
-    })
-
-    if (!response.ok) {
-      throw new Error('Failed to create session')
-    }
-
-    const data = await response.json()
-    setCurrentSessionId(data.session.id)
-    setLastSavedState(JSON.stringify(placedModels))
-    await refreshSessions()
-  }, [placedModels, models, refreshSessions])
+  }, [currentSessionId, placedModels, models, refreshSessions, handleSaveAsSession])
 
   const handleLoadSession = useCallback((session: SandboxSession) => {
     // Convert session models to placedModels format
-    const loadedModels: PlacedModel[] = (session.models || []).map((sm, index) => ({
+    const loadedModels: PlacedModel[] = (session.models || []).map((sm) => ({
       id: `loaded-${instanceCounterRef.current++}`,
       modelId: sm.modelId,
       url: sm.glbUrl,
