@@ -300,15 +300,27 @@ function ExitButton() {
 function VRManager() {
   const { session } = useXR()
   const originRef = useRef<THREE.Group>(null)
-  const { camera } = useThree()
+  const markerRef = useRef<THREE.Group>(null)
+  const { gl } = useThree()
   // Track snap turn state to require return-to-center
   const snapState = useRef<{ [key: string]: boolean }>({})
+  // Track teleport state
+  const teleportState = useRef<{ active: boolean, valid: boolean, position: THREE.Vector3 }>({ 
+    active: false, 
+    valid: false, 
+    position: new THREE.Vector3() 
+  })
   
-  useFrame((state, delta) => {
+  useFrame((state, delta, frame) => {
     if (!session || !originRef.current) return
     
-    const moveSpeed = 3.0 * delta
     const snapAngle = Math.PI / 2 // 90 degrees
+    
+    // Reset marker visibility at start of frame
+    if (markerRef.current) {
+      markerRef.current.visible = false
+    }
+    let isAnyTriggerPressed = false
     
     for (const source of session.inputSources) {
       if (!source.gamepad) continue
@@ -317,7 +329,7 @@ function VRManager() {
       const buttons = source.gamepad.buttons
       const hand = source.handedness
       
-      // --- Joystick Turning ---
+      // --- 1. Snap Turn (Joystick Left/Right) ---
       let stickX = 0
       // Check axes 2 (Standard) or 0 (Fallback)
       if (axes.length >= 4 && Math.abs(axes[2]) > 0.1) stickX = axes[2]
@@ -332,21 +344,65 @@ function VRManager() {
         const direction = stickX > 0 ? -1 : 1 // Right = -90deg (Clockwise)
         originRef.current.rotation.y += direction * snapAngle
       }
-      
-      // Update snap state
       snapState.current[hand] = isStickActive
       
-      // --- Trigger Movement ---
+      // --- 2. Teleportation (Trigger) ---
       const trigger = buttons[0]
       if (trigger && trigger.pressed) {
-        // Move in Look Direction
-        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion)
-        forward.y = 0
-        forward.normalize()
+        isAnyTriggerPressed = true
         
-        // Analog speed control based on trigger pressure
-        originRef.current.position.addScaledVector(forward, moveSpeed * trigger.value)
+        // Get controller pose to cast ray
+        // frame is passed as 3rd arg to useFrame
+        const referenceSpace = gl.xr.getReferenceSpace()
+        
+        if (frame && referenceSpace && source.targetRaySpace) {
+          const pose = frame.getPose(source.targetRaySpace, referenceSpace)
+          if (pose) {
+            const position = new THREE.Vector3(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z)
+            const orientation = new THREE.Quaternion(pose.transform.orientation.x, pose.transform.orientation.y, pose.transform.orientation.z, pose.transform.orientation.w)
+            const direction = new THREE.Vector3(0, 0, -1).applyQuaternion(orientation)
+            
+            // Raycast to ground (y=0)
+            // Ray: P + t*D. Find t where y=0.
+            // 0 = Py + t*Dy => t = -Py / Dy
+            if (direction.y < -0.1) { // Must be pointing somewhat down
+              const t = -position.y / direction.y
+              if (t > 0 && t < 30) { // Max distance 30m
+                const target = new THREE.Vector3().copy(position).add(direction.multiplyScalar(t))
+                
+                // Update marker
+                if (markerRef.current) {
+                  markerRef.current.visible = true
+                  markerRef.current.position.copy(target)
+                }
+                
+                teleportState.current.active = true
+                teleportState.current.valid = true
+                teleportState.current.position.copy(target)
+              } else {
+                teleportState.current.valid = false
+              }
+            } else {
+              teleportState.current.valid = false
+            }
+          }
+        }
       }
+    }
+    
+    // --- Execute Teleport on Release ---
+    if (!isAnyTriggerPressed && teleportState.current.active) {
+      if (teleportState.current.valid && originRef.current) {
+        // Move origin to target position
+        // We only change X and Z, keeping Y (height) as is (usually 0 for origin)
+        originRef.current.position.set(
+          teleportState.current.position.x,
+          originRef.current.position.y, // Keep current height offset if any
+          teleportState.current.position.z
+        )
+      }
+      teleportState.current.active = false
+      teleportState.current.valid = false
     }
   })
 
@@ -356,6 +412,17 @@ function VRManager() {
     <>
       <XROrigin ref={originRef} position={[0, 0, 5]} />
       <ExitButton />
+      {/* Teleport Marker */}
+      <group ref={markerRef} visible={false}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+          <ringGeometry args={[0.3, 0.35, 32]} />
+          <meshBasicMaterial color="#00ff00" transparent opacity={0.8} />
+        </mesh>
+        <mesh position={[0, 0.02, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 10, 8]} />
+          <meshBasicMaterial color="#00ff00" transparent opacity={0.3} />
+        </mesh>
+      </group>
     </>
   )
 }
