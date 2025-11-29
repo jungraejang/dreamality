@@ -1,15 +1,15 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera, ChevronUp, ChevronDown } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera, ChevronUp, ChevronDown, Glasses } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
-import { SandboxScene, SandboxSceneHandle } from '@/components/sandbox/sandbox-scene'
+import { SandboxScene, SandboxSceneHandle, xrStore } from '@/components/sandbox/sandbox-scene'
 import { ModelSelector } from '@/components/sandbox/model-selector'
 import { SessionManager } from '@/components/sandbox/session-manager'
 import { FadeIn } from '@/components/animations/fade-in'
@@ -48,8 +48,24 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
   const instanceCounterRef = useRef(0)
   const sandboxSceneRef = useRef<SandboxSceneHandle>(null)
 
+  const [isVRSupported, setIsVRSupported] = useState(false)
+
   const handleScreenshot = useCallback(() => {
     sandboxSceneRef.current?.takeScreenshot()
+  }, [])
+
+  const handleEnterVR = useCallback(() => {
+    xrStore.enterVR()
+  }, [])
+
+  // Check for VR support on mount
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && 'xr' in navigator) {
+      const xr = (navigator as Navigator & { xr: { isSessionSupported: (mode: string) => Promise<boolean> } }).xr
+      xr.isSessionSupported('immersive-vr')
+        .then((supported) => setIsVRSupported(supported))
+        .catch(() => setIsVRSupported(false))
+    }
   }, [])
   
   // Session management state
@@ -492,6 +508,17 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                           >
                             <Camera className="h-4 w-4 mr-2" />
                             Screenshot
+                          </AnimatedButton>
+                          <AnimatedButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleEnterVR}
+                            className="w-full justify-start text-purple-400 hover:text-purple-300 hover:bg-purple-500/10"
+                            data-no-eight-bit
+                            title={isVRSupported ? "Enter VR Mode" : "VR not supported on this device"}
+                          >
+                            <Glasses className="h-4 w-4 mr-2" />
+                            Enter VR
                           </AnimatedButton>
                           {selectedModelId && (
                             <>

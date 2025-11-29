@@ -3,10 +3,15 @@
 import { Suspense, useRef, useState, useEffect, useMemo, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
+import { XR, createXRStore } from '@react-three/xr'
 import * as THREE from 'three'
+
+// Create XR store for VR session management
+const xrStore = createXRStore()
 
 export interface SandboxSceneHandle {
   takeScreenshot: () => void
+  enterVR: () => void
 }
 
 interface PlacedModel {
@@ -215,7 +220,7 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
       {isSelected && targetObject && transformMode !== 'translate' && (
         <TransformControls
           ref={transformRef}
-          object={targetObject}
+          object={targetObject as unknown as THREE.Object3D}
           mode={localTransformMode}
           size={0.75}
           showX={true}
@@ -367,6 +372,9 @@ export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
         if (screenshotFnRef.current) {
           screenshotFnRef.current()
         }
+      },
+      enterVR: () => {
+        xrStore.enterVR()
       }
     }))
     
@@ -381,13 +389,18 @@ export const SandboxScene = forwardRef<SandboxSceneHandle, SandboxSceneProps>(
           shadows
           gl={{ preserveDrawingBuffer: true }}
         >
-          <Suspense fallback={null}>
-            <SceneContent {...props} />
-            <ScreenshotCapture onCapture={handleCaptureReady} />
-          </Suspense>
+          <XR store={xrStore}>
+            <Suspense fallback={null}>
+              <SceneContent {...props} />
+              <ScreenshotCapture onCapture={handleCaptureReady} />
+            </Suspense>
+          </XR>
         </Canvas>
       </div>
     )
   }
 )
+
+// Export VR store for external use
+export { xrStore }
 
