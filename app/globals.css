@@ -94,6 +94,32 @@
   }
 }
 
+/* Smooth transition for 8-bit mode toggle */
+html {
+  transition: background-color 0.5s ease, color 0.5s ease;
+}
+
+body,
+header,
+nav,
+main,
+footer,
+[class*="card"],
+[class*="Card"],
+button,
+input,
+textarea,
+select,
+[role="button"],
+[role="dialog"],
+[role="menu"] {
+  transition: 
+    background-color 0.5s ease,
+    color 0.5s ease,
+    border-color 0.5s ease,
+    box-shadow 0.5s ease;
+}
+
 /* ============================================
    DOS / TERMINAL STYLE MODE
    Classic amber/green phosphor CRT aesthetic
@@ -302,6 +328,8 @@
     transparent 3px
   );
   z-index: 9999;
+  opacity: 1;
+  animation: fadeInScanlines 0.5s ease-in;
 }
 
 /* CRT screen curvature effect */
@@ -320,6 +348,17 @@
     rgba(0, 0, 0, 0.4) 100%
   );
   z-index: 9998;
+  opacity: 1;
+  animation: fadeInScanlines 0.5s ease-in;
+}
+
+@keyframes fadeInScanlines {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* Navigation - DOS menu bar style */
