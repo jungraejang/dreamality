@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Sparkles, Image as ImageIcon, Box } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { motion } from 'framer-motion'
 
 export function NavTabs() {
   const pathname = usePathname()
@@ -30,7 +31,7 @@ export function NavTabs() {
   ]
 
   return (
-    <nav className="flex gap-1 bg-gray-800 p-1 rounded-lg">
+    <nav className="flex gap-1 bg-gray-800 p-1 rounded-lg relative">
       {tabs.map((tab) => {
         const Icon = tab.icon
         return (
@@ -38,14 +39,37 @@ export function NavTabs() {
             key={tab.href}
             href={tab.href}
             className={cn(
-              'flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all',
+              'relative flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors z-10',
               tab.active
-                ? 'bg-[#083d77] text-white shadow-sm'
+                ? 'text-white'
                 : 'text-gray-400 hover:text-gray-100'
             )}
           >
-            <Icon className="h-4 w-4" />
-            <span>{tab.name}</span>
+            {tab.active && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-[#083d77] rounded-md shadow-lg"
+                initial={false}
+                transition={{
+                  type: 'spring',
+                  stiffness: 500,
+                  damping: 35,
+                }}
+              />
+            )}
+            <motion.div
+              className="relative z-10 flex items-center gap-2"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <motion.div
+                animate={tab.active ? { rotate: [0, -10, 10, 0] } : {}}
+                transition={{ duration: 0.5, delay: 0.1 }}
+              >
+                <Icon className="h-4 w-4" />
+              </motion.div>
+              <span>{tab.name}</span>
+            </motion.div>
           </Link>
         )
       })}
