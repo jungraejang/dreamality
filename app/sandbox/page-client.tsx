@@ -8,6 +8,7 @@ import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera } from 
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 import { SandboxScene, SandboxSceneHandle } from '@/components/sandbox/sandbox-scene'
 import { ModelSelector } from '@/components/sandbox/model-selector'
 import { SessionManager } from '@/components/sandbox/session-manager'
@@ -603,9 +604,19 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                           <div className="space-y-1">
                             <div className="flex items-center justify-between">
                               <Label className="text-[10px]">Size</Label>
-                              <span className="text-[10px] text-muted-foreground">
-                                {selectedModel.scale[0].toFixed(2)}x
-                              </span>
+                              <Input
+                                type="number"
+                                value={selectedModel.scale[0]}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value)
+                                  if (!isNaN(val) && val > 0) {
+                                    handleScaleChange('uniform', val)
+                                  }
+                                }}
+                                step={0.01}
+                                min={0.01}
+                                className="w-16 h-5 text-[10px] px-1 text-right"
+                              />
                             </div>
                             <Slider
                               value={[selectedModel.scale[0]]}
@@ -630,9 +641,19 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                                 onValueChange={([v]) => handleScaleChange('x', v)}
                                 className="flex-1 [&_[role=slider]]:bg-red-500 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3"
                               />
-                              <span className="text-[10px] text-muted-foreground w-6 text-right">
-                                {selectedModel.scale[0].toFixed(1)}
-                              </span>
+                              <Input
+                                type="number"
+                                value={selectedModel.scale[0]}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value)
+                                  if (!isNaN(val) && val > 0) {
+                                    handleScaleChange('x', val)
+                                  }
+                                }}
+                                step={0.01}
+                                min={0.01}
+                                className="w-12 h-5 text-[10px] px-1 text-right"
+                              />
                             </div>
                             <div className="flex items-center gap-1">
                               <Label className="text-[10px] text-green-500 w-3">Y</Label>
@@ -644,9 +665,19 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                                 onValueChange={([v]) => handleScaleChange('y', v)}
                                 className="flex-1 [&_[role=slider]]:bg-green-500 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3"
                               />
-                              <span className="text-[10px] text-muted-foreground w-6 text-right">
-                                {selectedModel.scale[1].toFixed(1)}
-                              </span>
+                              <Input
+                                type="number"
+                                value={selectedModel.scale[1]}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value)
+                                  if (!isNaN(val) && val > 0) {
+                                    handleScaleChange('y', val)
+                                  }
+                                }}
+                                step={0.01}
+                                min={0.01}
+                                className="w-12 h-5 text-[10px] px-1 text-right"
+                              />
                             </div>
                             <div className="flex items-center gap-1">
                               <Label className="text-[10px] text-blue-500 w-3">Z</Label>
@@ -658,9 +689,19 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                                 onValueChange={([v]) => handleScaleChange('z', v)}
                                 className="flex-1 [&_[role=slider]]:bg-blue-500 [&_[role=slider]]:h-3 [&_[role=slider]]:w-3"
                               />
-                              <span className="text-[10px] text-muted-foreground w-6 text-right">
-                                {selectedModel.scale[2].toFixed(1)}
-                              </span>
+                              <Input
+                                type="number"
+                                value={selectedModel.scale[2]}
+                                onChange={(e) => {
+                                  const val = parseFloat(e.target.value)
+                                  if (!isNaN(val) && val > 0) {
+                                    handleScaleChange('z', val)
+                                  }
+                                }}
+                                step={0.01}
+                                min={0.01}
+                                className="w-12 h-5 text-[10px] px-1 text-right"
+                              />
                             </div>
                           </div>
                         )}
