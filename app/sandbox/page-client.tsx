@@ -237,6 +237,17 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
     )
   }, [])
 
+  const handleModelDrag = useCallback((
+    instanceId: string,
+    position: [number, number, number]
+  ) => {
+    setPlacedModels((prev) =>
+      prev.map((pm) =>
+        pm.id === instanceId ? { ...pm, position } : pm
+      )
+    )
+  }, [])
+
   // Get selected model's current scale
   const selectedModel = placedModels.find((pm) => pm.id === selectedModelId)
   
@@ -623,6 +634,7 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                   transformMode={transformMode}
                   onModelSelect={handleModelSelect}
                   onModelTransform={handleModelTransform}
+                  onModelDrag={handleModelDrag}
                 />
 
                 <div className="text-xs text-muted-foreground space-y-1">
@@ -630,7 +642,8 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                   <p>🖱️ <strong>Right Click + Drag:</strong> Pan camera</p>
                   <p>🖱️ <strong>Scroll:</strong> Zoom in/out</p>
                   <p>👆 <strong>Click Model:</strong> Select model</p>
-                  <p>🔧 <strong>Drag Gizmo:</strong> Move or rotate selected model</p>
+                  <p>✋ <strong>Drag Model (Move mode):</strong> Move model on XZ plane</p>
+                  <p>🔧 <strong>Drag Gizmo (Rotate/Scale):</strong> Transform selected model</p>
                   <p>⬜ <strong>Click Ground:</strong> Deselect model</p>
                 </div>
               </CardContent>

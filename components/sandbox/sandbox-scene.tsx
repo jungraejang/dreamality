@@ -1,7 +1,7 @@
 'use client'
 
-import { Suspense, useRef, useState, useEffect, useMemo } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
+import { Suspense, useRef, useState, useEffect, useMemo, useCallback } from 'react'
+import { Canvas, useThree, ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF, TransformControls } from '@react-three/drei'
 import * as THREE from 'three'
 
@@ -21,16 +21,37 @@ interface ModelProps {
   isSelected: boolean
   onSelect: () => void
   onTransformEnd: (position: [number, number, number], rotation: [number, number, number], scale: [number, number, number]) => void
+  onDrag: (position: [number, number, number]) => void
   transformMode: 'translate' | 'rotate' | 'scale'
+  setIsDragging: (dragging: boolean) => void
 }
 
-function Model({ url, position, rotation, scale, isSelected, onSelect, onTransformEnd, transformMode }: ModelProps) {
+function Model({ url, position, rotation, scale, isSelected, onSelect, onTransformEnd, onDrag, transformMode, setIsDragging }: ModelProps) {
   const { scene } = useGLTF(url, true)
   const groupRef = useRef<THREE.Group>(null!)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const transformRef = useRef<any>(null)
   const [localTransformMode, setLocalTransformMode] = useState(transformMode)
   const [targetObject, setTargetObject] = useState<THREE.Group | null>(null)
+  const [isDraggingLocal, setIsDraggingLocal] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const { camera, raycaster, gl } = useThree()
+  const groundPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), [])
+  
+  // Handle cursor style changes via useEffect to avoid modifying gl directly
+  useEffect(() => {
+    if (isDraggingLocal) {
+      document.body.style.cursor = 'grabbing'
+    } else if (isHovered && isSelected && transformMode === 'translate') {
+      document.body.style.cursor = 'grab'
+    } else {
+      document.body.style.cursor = 'auto'
+    }
+    
+    return () => {
+      document.body.style.cursor = 'auto'
+    }
+  }, [isDraggingLocal, isHovered, isSelected, transformMode])
   
   // Clone the scene and calculate bounding box to place model on ground
   const { clonedScene, yOffset } = useMemo(() => {
@@ -56,7 +77,7 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
     }
   }, [isSelected])
 
-  // Handle transform end
+  // Handle transform end for TransformControls (rotate/scale)
   useEffect(() => {
     const controls = transformRef.current
     if (!controls) return
@@ -85,6 +106,72 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
     }
   }, [onTransformEnd, isSelected])
 
+  // Handle pointer drag for translate mode
+  const handlePointerDown = useCallback((e: ThreeEvent<PointerEvent>) => {
+    if (!isSelected || transformMode !== 'translate') return
+    e.stopPropagation()
+    setIsDraggingLocal(true)
+    setIsDragging(true)
+  }, [isSelected, transformMode, setIsDragging])
+
+  const handlePointerUp = useCallback(() => {
+    if (isDraggingLocal) {
+      setIsDraggingLocal(false)
+      setIsDragging(false)
+      // Report final position
+      if (groupRef.current) {
+        const pos = groupRef.current.position
+        onTransformEnd(
+          [pos.x, pos.y, pos.z],
+          rotation,
+          scale
+        )
+      }
+    }
+  }, [isDraggingLocal, setIsDragging, onTransformEnd, rotation, scale])
+
+  // Global pointer move for dragging
+  useEffect(() => {
+    if (!isDraggingLocal || !isSelected || transformMode !== 'translate') return
+
+    const handlePointerMove = (e: PointerEvent) => {
+      // Convert mouse position to normalized device coordinates
+      const rect = gl.domElement.getBoundingClientRect()
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      )
+
+      // Cast ray and find intersection with ground plane
+      raycaster.setFromCamera(mouse, camera)
+      const intersection = new THREE.Vector3()
+      raycaster.ray.intersectPlane(groundPlane, intersection)
+
+      if (intersection) {
+        // Update position - only X and Z, keep Y at 0
+        const newPosition: [number, number, number] = [intersection.x, 0, intersection.z]
+        onDrag(newPosition)
+        
+        // Update local group position for immediate visual feedback
+        if (groupRef.current) {
+          groupRef.current.position.set(intersection.x, 0, intersection.z)
+        }
+      }
+    }
+
+    const handlePointerUpGlobal = () => {
+      handlePointerUp()
+    }
+
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUpGlobal)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUpGlobal)
+    }
+  }, [isDraggingLocal, isSelected, transformMode, camera, raycaster, gl, groundPlane, onDrag, handlePointerUp])
+
   return (
     <>
       <group
@@ -96,6 +183,10 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
           e.stopPropagation()
           onSelect()
         }}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
+        onPointerOver={() => setIsHovered(true)}
+        onPointerOut={() => setIsHovered(false)}
       >
         {/* Offset the model so its bottom sits on the ground */}
         <group position={[0, yOffset, 0]}>
@@ -108,8 +199,16 @@ function Model({ url, position, rotation, scale, isSelected, onSelect, onTransfo
             <meshBasicMaterial color="#f95738" transparent opacity={0.5} />
           </mesh>
         )}
+        {/* Drag indicator for translate mode */}
+        {isSelected && transformMode === 'translate' && (
+          <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <circleGeometry args={[0.3, 32]} />
+            <meshBasicMaterial color="#083d77" transparent opacity={0.7} />
+          </mesh>
+        )}
       </group>
-      {isSelected && targetObject && (
+      {/* Only show TransformControls for rotate and scale modes */}
+      {isSelected && targetObject && transformMode !== 'translate' && (
         <TransformControls
           ref={transformRef}
           object={targetObject}
@@ -130,6 +229,7 @@ interface SandboxSceneProps {
   transformMode: 'translate' | 'rotate' | 'scale'
   onModelSelect: (id: string | null) => void
   onModelTransform: (id: string, position: [number, number, number], rotation: [number, number, number], scale: [number, number, number]) => void
+  onModelDrag: (id: string, position: [number, number, number]) => void
 }
 
 function SceneContent({ 
@@ -137,9 +237,10 @@ function SceneContent({
   selectedModelId, 
   transformMode,
   onModelSelect, 
-  onModelTransform 
+  onModelTransform,
+  onModelDrag
 }: SandboxSceneProps) {
-  const { gl } = useThree()
+  const [isDragging, setIsDragging] = useState(false)
 
   return (
     <>
@@ -207,10 +308,12 @@ function SceneContent({
           transformMode={transformMode}
           onSelect={() => onModelSelect(model.id)}
           onTransformEnd={(pos, rot, scl) => onModelTransform(model.id, pos, rot, scl)}
+          onDrag={(pos) => onModelDrag(model.id, pos)}
+          setIsDragging={setIsDragging}
         />
       ))}
 
-      {/* Camera Controls - disabled when transforming */}
+      {/* Camera Controls - disabled when transforming or dragging */}
       <OrbitControls
         enablePan={true}
         enableZoom={true}
@@ -218,7 +321,7 @@ function SceneContent({
         minDistance={5}
         maxDistance={50}
         maxPolarAngle={Math.PI / 2}
-        enabled={!selectedModelId}
+        enabled={!selectedModelId || (!isDragging && transformMode !== 'translate')}
       />
     </>
   )
@@ -226,7 +329,7 @@ function SceneContent({
 
 export function SandboxScene(props: SandboxSceneProps) {
   return (
-    <div className="w-full h-[600px] rounded-lg overflow-hidden border bg-gradient-to-b from-sky-100 to-sky-200 dark:from-slate-300 dark:to-slate-400">
+    <div className="w-full h-[600px] rounded-lg overflow-hidden border bg-linear-to-b from-sky-100 to-sky-200 dark:from-slate-300 dark:to-slate-400">
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
         shadows
