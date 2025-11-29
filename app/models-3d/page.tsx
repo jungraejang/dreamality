@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AnimatedButton } from '@/components/animated-button'
-import { ArrowLeft, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { ModelsGrid } from './page-client'
 
 export default async function Models3DPage() {
@@ -36,20 +36,12 @@ export default async function Models3DPage() {
               AI-generated 3D models from your images
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Link href="/gallery">
-              <AnimatedButton variant="outline">
-                <ImageIcon className="mr-2 h-4 w-4" />
-                Image Gallery
-              </AnimatedButton>
-            </Link>
-            <Link href="/">
-              <AnimatedButton variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </AnimatedButton>
-            </Link>
-          </div>
+          <Link href="/">
+            <AnimatedButton variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </AnimatedButton>
+          </Link>
         </div>
 
         {error && (

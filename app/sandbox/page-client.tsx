@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { AnimatedButton } from '@/components/animated-button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera } from 'lucide-react'
+import { ArrowLeft, RotateCcw, Move, RotateCw, Trash2, Maximize2, Camera, ChevronUp, ChevronDown } from 'lucide-react'
 import { Slider } from '@/components/ui/slider'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -44,6 +44,7 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null)
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate')
   const [uniformScale, setUniformScale] = useState(true)
+  const [controlsMinimized, setControlsMinimized] = useState(false)
   const instanceCounterRef = useRef(0)
   const sandboxSceneRef = useRef<SandboxSceneHandle>(null)
 
@@ -430,63 +431,90 @@ export function SandboxClient({ models, initialSessions }: SandboxClientProps) {
                   {/* Transform Controls Overlay - Top Right */}
                   <div className="absolute top-3 right-3 flex flex-col gap-2 z-10">
                     {/* Tool Buttons */}
-                    <div className="flex flex-col gap-1 p-2 bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20">
-                      <AnimatedButton
-                        size="sm"
-                        variant={transformMode === 'translate' ? 'default' : 'outline'}
-                        onClick={() => setTransformMode('translate')}
-                        className="w-full justify-start"
+                    <div className="bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 overflow-hidden">
+                      {/* Header with minimize toggle */}
+                      <button
+                        onClick={() => setControlsMinimized(!controlsMinimized)}
+                        className="w-full flex items-center justify-between px-3 py-2 text-zinc-300 hover:text-white hover:bg-white/10 transition-colors"
+                        data-no-eight-bit
                       >
-                        <Move className="h-4 w-4 mr-2" />
-                        Move
-                      </AnimatedButton>
-                      <AnimatedButton
-                        size="sm"
-                        variant={transformMode === 'rotate' ? 'default' : 'outline'}
-                        onClick={() => setTransformMode('rotate')}
-                        className="w-full justify-start"
-                      >
-                        <RotateCw className="h-4 w-4 mr-2" />
-                        Rotate
-                      </AnimatedButton>
-                      <AnimatedButton
-                        size="sm"
-                        variant={transformMode === 'scale' ? 'default' : 'outline'}
-                        onClick={() => setTransformMode('scale')}
-                        className="w-full justify-start"
-                      >
-                        <Maximize2 className="h-4 w-4 mr-2" />
-                        Scale
-                      </AnimatedButton>
-                      <div className="border-t my-1" />
-                      <AnimatedButton
-                        size="sm"
-                        variant="outline"
-                        onClick={handleScreenshot}
-                        className="w-full justify-start"
-                      >
-                        <Camera className="h-4 w-4 mr-2" />
-                        Screenshot
-                      </AnimatedButton>
-                      {selectedModelId && (
-                        <>
-                          <div className="border-t my-1" />
+                        <span className="text-xs font-medium">Controls</span>
+                        {controlsMinimized ? (
+                          <ChevronDown className="h-4 w-4" />
+                        ) : (
+                          <ChevronUp className="h-4 w-4" />
+                        )}
+                      </button>
+                      
+                      {/* Collapsible content */}
+                      {!controlsMinimized && (
+                        <div className="flex flex-col gap-1 p-2 pt-0 border-t border-white/10">
                           <AnimatedButton
                             size="sm"
-                            variant="destructive"
-                            onClick={handleDeleteSelected}
-                            className="w-full justify-start"
+                            variant="ghost"
+                            onClick={() => setTransformMode('translate')}
+                            className={`w-full justify-start ${transformMode !== 'translate' ? 'text-zinc-300 hover:text-white hover:bg-white/10' : ''}`}
+                            style={transformMode === 'translate' ? { backgroundColor: '#ffffff', color: '#18181b' } : undefined}
+                            data-no-eight-bit
                           >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                            <Move className="h-4 w-4 mr-2" style={transformMode === 'translate' ? { color: '#18181b' } : undefined} />
+                            Move
                           </AnimatedButton>
-                        </>
+                          <AnimatedButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setTransformMode('rotate')}
+                            className={`w-full justify-start ${transformMode !== 'rotate' ? 'text-zinc-300 hover:text-white hover:bg-white/10' : ''}`}
+                            style={transformMode === 'rotate' ? { backgroundColor: '#ffffff', color: '#18181b' } : undefined}
+                            data-no-eight-bit
+                          >
+                            <RotateCw className="h-4 w-4 mr-2" style={transformMode === 'rotate' ? { color: '#18181b' } : undefined} />
+                            Rotate
+                          </AnimatedButton>
+                          <AnimatedButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setTransformMode('scale')}
+                            className={`w-full justify-start ${transformMode !== 'scale' ? 'text-zinc-300 hover:text-white hover:bg-white/10' : ''}`}
+                            style={transformMode === 'scale' ? { backgroundColor: '#ffffff', color: '#18181b' } : undefined}
+                            data-no-eight-bit
+                          >
+                            <Maximize2 className="h-4 w-4 mr-2" style={transformMode === 'scale' ? { color: '#18181b' } : undefined} />
+                            Scale
+                          </AnimatedButton>
+                          <div className="border-t border-white/20 my-1" />
+                          <AnimatedButton
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleScreenshot}
+                            className="w-full justify-start text-zinc-300 hover:text-white hover:bg-white/10"
+                            data-no-eight-bit
+                          >
+                            <Camera className="h-4 w-4 mr-2" />
+                            Screenshot
+                          </AnimatedButton>
+                          {selectedModelId && (
+                            <>
+                              <div className="border-t border-white/20 my-1" />
+                              <AnimatedButton
+                                size="sm"
+                                variant="ghost"
+                                onClick={handleDeleteSelected}
+                                className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                data-no-eight-bit
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </AnimatedButton>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
 
-                    {/* Transform Values Panel - Only show when model selected */}
-                    {selectedModelId && selectedModel && (
-                      <div className="p-3 bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 w-48">
+                    {/* Transform Values Panel - Only show when model selected and controls not minimized */}
+                    {!controlsMinimized && selectedModelId && selectedModel && (
+                      <div className="p-3 bg-zinc-900/60 backdrop-blur-sm rounded-lg shadow-lg border border-white/20 w-48 text-zinc-200">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-xs font-medium">
                             {transformMode === 'translate' ? 'Position' : transformMode === 'rotate' ? 'Rotation' : 'Scale'}

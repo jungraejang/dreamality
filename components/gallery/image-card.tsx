@@ -111,11 +111,11 @@ export function ImageCard({ image }: ImageCardProps) {
           })}
         </p>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="space-y-2 p-4">
         {error && (
           <p className="text-xs text-destructive">{error}</p>
         )}
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <AnimatedButton
             variant="outline"
             size="sm"
@@ -145,7 +145,7 @@ export function ImageCard({ image }: ImageCardProps) {
           </AnimatedButton>
           <AnimatedButton
             size="sm"
-            className="flex-1"
+            className="flex-1 min-w-[120px]"
             onClick={handleGenerate3D}
             disabled={generating}
           >
@@ -159,9 +159,9 @@ export function ImageCard({ image }: ImageCardProps) {
                 <Box className="mr-2 h-4 w-4" />
                 Generate 3D
               </>
-          )}
-        </AnimatedButton>
-      </div>
+            )}
+          </AnimatedButton>
+        </div>
       </CardContent>
 
       <DeleteConfirmationModal

@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { AnimatedButton } from '@/components/animated-button'
-import { ArrowLeft, Box } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
 import { GalleryGrid } from './page-client'
 
 interface GeneratedImage {
@@ -34,25 +34,17 @@ export default async function GalleryPage() {
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">Your Gallery</h1>
+            <h1 className="text-4xl font-bold tracking-tight">Your Images</h1>
             <p className="text-muted-foreground mt-2">
               All your AI-generated images in one place
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-2">
-            <Link href="/models-3d">
-              <AnimatedButton variant="outline">
-                <Box className="mr-2 h-4 w-4" />
-                3D Models
-              </AnimatedButton>
-            </Link>
-            <Link href="/">
-              <AnimatedButton variant="outline">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back
-              </AnimatedButton>
-            </Link>
-          </div>
+          <Link href="/">
+            <AnimatedButton variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </AnimatedButton>
+          </Link>
         </div>
 
         {error && (

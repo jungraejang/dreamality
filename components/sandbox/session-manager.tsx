@@ -190,7 +190,7 @@ export function SessionManager({
 
         {currentSession && (
           <div className="flex items-center gap-2 px-3 py-1 bg-muted rounded-md text-sm">
-            <span className="font-medium truncate max-w-[150px]">{currentSession.name}</span>
+            <span className="font-medium">{currentSession.name}</span>
             {hasUnsavedChanges && (
               <span className="text-xs text-yellow-600 dark:text-yellow-400">•</span>
             )}
