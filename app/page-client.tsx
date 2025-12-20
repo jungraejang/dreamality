@@ -193,6 +193,23 @@ export function ImageGenerator() {
             <p className="text-muted-foreground">
               Transform your ideas into printable 3D models with AI
             </p>
+            <div className="mt-6 text-left max-w-md mx-auto">
+              <p className="text-sm text-muted-foreground mb-3">How it works:</p>
+              <ol className="text-sm text-muted-foreground space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">1.</span>
+                  <span>Describe your idea and let AI generate a stunning image</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">2.</span>
+                  <span>Convert your image into a detailed 3D model with one click</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-semibold text-foreground">3.</span>
+                  <span>Explore, customize, and download your models in multiple formats</span>
+                </li>
+              </ol>
+            </div>
           </div>
         </FadeIn>
 

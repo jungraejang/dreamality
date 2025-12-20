@@ -43,6 +43,8 @@ export async function POST(request: Request) {
         glb_url: model.glb_url,
         fbx_url: model.fbx_url,
         usdz_url: model.usdz_url,
+        stl_url: model.stl_url,
+        obj_url: model.obj_url,
         error_message: model.error_message,
       })
     }
@@ -85,52 +87,61 @@ export async function POST(request: Request) {
       updateData.stl_url = meshyData.model_urls?.stl
       updateData.completed_at = new Date().toISOString()
 
-      // Download and store GLB file in Supabase Storage
-      try {
-        if (meshyData.model_urls?.glb) {
-          console.log('🔽 Downloading GLB from Meshy:', meshyData.model_urls.glb)
+      // Download and store 3D files in Supabase Storage
+      const downloadAndUpload = async (
+        url: string | undefined,
+        extension: string,
+        contentType: string
+      ): Promise<string | undefined> => {
+        if (!url) return undefined
+        
+        try {
+          console.log(`🔽 Downloading ${extension.toUpperCase()} from Meshy:`, url)
+          const response = await fetch(url)
           
-          const glbResponse = await fetch(meshyData.model_urls.glb)
-          console.log('📥 GLB download response status:', glbResponse.status)
-          
-          if (glbResponse.ok) {
-            const glbBlob = await glbResponse.blob()
-            const glbBuffer = Buffer.from(await glbBlob.arrayBuffer())
-            console.log('📦 GLB file size:', glbBuffer.length, 'bytes')
+          if (response.ok) {
+            const blob = await response.blob()
+            const buffer = Buffer.from(await blob.arrayBuffer())
+            console.log(`📦 ${extension.toUpperCase()} file size:`, buffer.length, 'bytes')
 
-            // Upload to Supabase Storage
-            const fileName = `${user.id}/${model.meshy_task_id}.glb`
-            console.log('⬆️  Uploading to Supabase:', fileName)
+            const fileName = `${user.id}/${model.meshy_task_id}.${extension}`
+            console.log(`⬆️  Uploading ${extension.toUpperCase()} to Supabase:`, fileName)
             
             const { data: uploadData, error: uploadError } = await supabase.storage
               .from('generated-images')
-              .upload(fileName, glbBuffer, {
-                contentType: 'model/gltf-binary',
+              .upload(fileName, buffer, {
+                contentType,
                 upsert: true,
               })
 
             if (!uploadError && uploadData) {
-              // Get permanent public URL
-              const {
-                data: { publicUrl },
-              } = supabase.storage.from('generated-images').getPublicUrl(fileName)
-
-              // Update with Supabase URL instead of Meshy URL
-              updateData.glb_url = publicUrl
-              console.log('✅ GLB saved to Supabase:', publicUrl)
-              console.log('🎉 Now using YOUR storage URL instead of Meshy!')
+              const { data: { publicUrl } } = supabase.storage
+                .from('generated-images')
+                .getPublicUrl(fileName)
+              console.log(`✅ ${extension.toUpperCase()} saved to Supabase:`, publicUrl)
+              return publicUrl
             } else {
-              console.error('❌ Failed to upload GLB to Supabase:', uploadError)
-              console.log('⚠️  Falling back to Meshy URL')
+              console.error(`❌ Failed to upload ${extension.toUpperCase()} to Supabase:`, uploadError)
             }
           } else {
-            console.error('❌ Failed to download GLB from Meshy, status:', glbResponse.status)
+            console.error(`❌ Failed to download ${extension.toUpperCase()} from Meshy, status:`, response.status)
           }
+        } catch (error) {
+          console.error(`❌ Error downloading/uploading ${extension.toUpperCase()}:`, error)
         }
-      } catch (error) {
-        console.error('❌ Error downloading/uploading GLB:', error)
-        // Continue with Meshy URL if storage fails
+        return undefined
       }
+
+      // Download all available formats
+      const [glbUrl, stlUrl, objUrl] = await Promise.all([
+        downloadAndUpload(meshyData.model_urls?.glb, 'glb', 'model/gltf-binary'),
+        downloadAndUpload(meshyData.model_urls?.stl, 'stl', 'model/stl'),
+        downloadAndUpload(meshyData.model_urls?.obj, 'obj', 'model/obj'),
+      ])
+
+      if (glbUrl) updateData.glb_url = glbUrl
+      if (stlUrl) updateData.stl_url = stlUrl
+      if (objUrl) updateData.obj_url = objUrl
     } else if (status === 'FAILED') {
       updateData.error_message = meshyData.error || 'Unknown error'
       updateData.completed_at = new Date().toISOString()
@@ -157,6 +168,8 @@ export async function POST(request: Request) {
       glb_url: updateData.glb_url,
       fbx_url: updateData.fbx_url,
       usdz_url: updateData.usdz_url,
+      stl_url: updateData.stl_url,
+      obj_url: updateData.obj_url,
       error_message: updateData.error_message,
       progress: meshyData.progress || 0,
     })
