@@ -1,6 +1,17 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
+interface ModelUpdateData {
+  status: string
+  model_url?: string
+  thumbnail_url?: string
+  glb_url?: string
+  obj_url?: string
+  stl_url?: string
+  completed_at?: string
+  error_message?: string
+}
+
 export async function POST(request: Request) {
   try {
     // Check authentication
@@ -41,8 +52,6 @@ export async function POST(request: Request) {
         model_url: model.model_url,
         thumbnail_url: model.thumbnail_url,
         glb_url: model.glb_url,
-        fbx_url: model.fbx_url,
-        usdz_url: model.usdz_url,
         stl_url: model.stl_url,
         obj_url: model.obj_url,
         error_message: model.error_message,
@@ -73,7 +82,7 @@ export async function POST(request: Request) {
     const status = meshyData.status // PENDING, IN_PROGRESS, SUCCEEDED, FAILED
 
     // Update database with new status
-    const updateData: any = {
+    const updateData: ModelUpdateData = {
       status: status,
     }
 
@@ -81,8 +90,6 @@ export async function POST(request: Request) {
       updateData.model_url = meshyData.model_url
       updateData.thumbnail_url = meshyData.thumbnail_url
       updateData.glb_url = meshyData.model_urls?.glb
-      updateData.fbx_url = meshyData.model_urls?.fbx
-      updateData.usdz_url = meshyData.model_urls?.usdz
       updateData.obj_url = meshyData.model_urls?.obj
       updateData.stl_url = meshyData.model_urls?.stl
       updateData.completed_at = new Date().toISOString()
@@ -166,8 +173,6 @@ export async function POST(request: Request) {
       model_url: updateData.model_url,
       thumbnail_url: updateData.thumbnail_url,
       glb_url: updateData.glb_url,
-      fbx_url: updateData.fbx_url,
-      usdz_url: updateData.usdz_url,
       stl_url: updateData.stl_url,
       obj_url: updateData.obj_url,
       error_message: updateData.error_message,
